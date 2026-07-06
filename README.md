@@ -1,7 +1,9 @@
 # Module 7: LangGraph
 
 This repository contains the hands-on portion of Module 7, a training for developing AI agents developed by the AI Hub and TLI at UMN, in partnership with Endogenex, Inspire, and Medtronic.
-The repository focuses on LangGraph, a popular open source 
+The repository focuses on LangGraph, an open source framework for developing AI agents.
+Libraries and tools for AI agents are changing quickly, and LangGraph was chosen for this tool because 1) it can illustrate many of the underlying concepts in developing AI agents and 2) it is widely used as of mid 2026.
+LangGraph is likely not the best framework for every use case and may not be the best framework two years from now.
 
 The repository is organized so that branches contain different sections of the training.
 The sections are:
