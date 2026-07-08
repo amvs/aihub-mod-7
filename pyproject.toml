@@ -1,0 +1,16 @@
+[project]
+name = "aihub-mod-7"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "jupyter>=1.0.0",
+    "langchain>=1.3.10",
+    "langchain-anthropic>=1.4.6",
+    "langchain-community>=0.4.2",
+    "langchain-groq>=1.1.3",
+    "langchain-openai>=1.0.0",
+    "langgraph>=1.0.0",
+    "langgraph-cli[inmem]>=0.4.0",
+]

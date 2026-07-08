@@ -43,7 +43,23 @@ Insert API key(s) directly into .env file
 
 Make a virtual environment and install dependencies from `requirements.txt` file.
 You can use pip instead of uv if you prefer.
+
+To create a new venv, run:
+
 ```bash
-# Create virtual environment and install dependencies
+# create venv
+# can specify python version, e.g. python3.11 -m venv .venv
+python -m venv .venv
+# activate the env
+source .venv/bin/activate
+```
+
+Now we can install the packages we need. If `uv` is not installed, you can run `pip install uv` to install it.
+
+
+```bash
+# set up uv and install dependencies
+uv init
 uv sync
+uv add -r requirements.txt
 ```
