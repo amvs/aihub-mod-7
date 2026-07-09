@@ -1,6 +1,12 @@
 import pandas as pd
 from datetime import datetime, timedelta
 import os
+import yaml
+
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+EMAIL_AGENT_SPEEDUP = config["backend"]["email_agent"]["virtual_speedup_factor"]
 
 # TODO - add a config to speed up email timeline, so we can simulate a day of emails in a few minutes for testing
 
@@ -12,6 +18,7 @@ class SimulatedEmailService:
         self.app_start_real_time = datetime.now()
         self.df = self._load_and_prep_data()
         self.download_if_missing = download_if_missing
+        self.virtual_speedup_factor = EMAIL_AGENT_SPEEDUP
         
         if not self.df.empty:
             self.dataset_start_time = self.df['timestamp'].min()
@@ -40,7 +47,8 @@ class SimulatedEmailService:
                 df = pd.DataFrame(mock_data)
         else:
             df = pd.read_csv(self.csv_path)
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
+            df['timestamp'] = df.timestamp.str.split('.').str[0]  # Remove milliseconds if present
+            df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         
         # Rule: Exclude internal support email address
         df = df[df['sender'] != 'support@aetheros.com']
@@ -50,7 +58,7 @@ class SimulatedEmailService:
     def get_current_virtual_time(self) -> datetime:
         """Calculates what time it currently 'is' in our simulated dataset timeline."""
         real_now = datetime.now()
-        return real_now + self.time_offset
+        return real_now + self.time_offset * self.virtual_speedup_factor
 
     def fetch_new_incoming_emails(self, processed_ids: list) -> list:
         """

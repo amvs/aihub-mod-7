@@ -1,9 +1,12 @@
 import streamlit as st
 import requests
 import time
+import yaml
 
-# Configuration pointing to your FastAPI backend container/process
-BACKEND_URL = "http://localhost:8000"
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+BACKEND_URL = config["backend"]["url"]
 
 st.set_page_config(page_title="AetherOS Email Agent Control Center", layout="wide")
 st.title("📥 Agent Control Center (Simulated Environment)")
@@ -20,7 +23,9 @@ with st.sidebar:
     if st.button("🔄 Check for New Emails", type="primary"):
         # 1. Ask FastAPI to pull from email_service.py and ingest into LangGraph
         try:
+            st.write("Posting requests to backend to check inbox...")
             response = requests.post(f"{BACKEND_URL}/agent/check-inbox")
+            st.write(response.status_code)
             if response.status_code == 200:
                 data = response.json()
                 st.success(f"Ingested {data.get('new_emails_count', 0)} new emails into the workflow!")

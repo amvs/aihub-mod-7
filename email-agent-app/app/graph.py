@@ -4,9 +4,16 @@ from langchain_groq import ChatGroq
 from langgraph.types import Command, interrupt
 from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
-
+from dotenv import load_dotenv
+import yaml
 
 load_dotenv()
+
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
+LLM_MODEL = config["backend"]["llm"]["model"]
 
 class EmailClassification(TypedDict):
     intent: Literal["question", "bug", "billing", "feature", "complex"]
@@ -45,7 +52,7 @@ def read_email(state: EmailAgentState) -> EmailAgentState:
 def classify_intent(state: EmailAgentState) -> EmailAgentState:
     """Use LLM to classify email intent and urgency, then route accordingly"""
 
-    llm = ChatGroq(model="llama-3.3-70b-versatile", temperature=0)
+    llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
 
     # Create structured LLM that returns EmailClassification dict
     structured_llm = llm.with_structured_output(EmailClassification)

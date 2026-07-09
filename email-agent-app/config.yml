@@ -1,0 +1,8 @@
+backend:
+  url: "http://api:8000"
+  llm:
+    vendor: groq
+    model: llama-3.3-70b-versatile
+    temperature: 0
+  email_agent:
+    virtual_speedup_factor: 1.0
