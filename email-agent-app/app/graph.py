@@ -178,6 +178,19 @@ def send_reply(state: EmailAgentState) -> EmailAgentState:
     print(f"Sending reply: {state['draft_response'][:60]}...")
     return {}
 
+def route_after_review(state: EmailAgentState):
+    """Determines where to go after the human makes a decision."""
+    if state["draft_response"] == "ESCALATED_TO_HUMAN":
+        return "escalate"
+    return "send"
+
+# --- Optional: A node to handle rejections ---
+def escalate_ticket(state: EmailAgentState):
+    """Handles what happens when an email is rejected by the reviewer."""
+    # Here you might update a database, tag the ticket as 'Needs Manual Support', etc.
+    print(f"Ticket {state['email_id']} was escalated and will NOT be emailed by the agent.")
+    return state
+
 def build_graph():
     # Create the graph
     # llm = ChatOpenAI(model="gpt-5-mini")
@@ -192,6 +205,9 @@ def build_graph():
     builder.add_node("write_response", write_response)
     builder.add_node("human_review", human_review)
     builder.add_node("send_reply", send_reply)
+    builder.add_node("escalate_ticket", escalate_ticket)
+    
+
 
     # Add edges
     builder.add_edge(START, "read_email")
@@ -200,6 +216,16 @@ def build_graph():
     builder.add_edge("classify_intent", "bug_tracking")
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
+    builder.add_conditional_edges(
+        "human_review", 
+        route_after_review,
+        {
+            "send": "send_reply",
+            "escalate": "escalate_ticket"
+        }
+    )
+
+    builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
 
     # Compile with checkpointer for persistence
@@ -207,6 +233,12 @@ def build_graph():
     app = builder.compile(checkpointer = memory)
     # TODO - add thread id for email threads - stored in dataset as column thread_id
     return app
+
+
+
+# --- Updating your Graph Compilation ---
+# (Replace your existing edges after human_review with this)
+
 
 # TODO add a function to get active interrupts for the front-end to poll and display
 
