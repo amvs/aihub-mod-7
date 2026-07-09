@@ -22,11 +22,11 @@ class SimulatedEmailService:
         
         if not self.df.empty:
             self.dataset_start_time = self.df['timestamp'].min()
-            # Virtual offset: data_time = dataset_start_time + (real_now - app_start_real_time) - 1_minute
-            self.time_offset = self.dataset_start_time - self.app_start_real_time - timedelta(minutes=1)
+            # Start virtual time 1 minute before the first email in the dataset
+            self.virtual_start_time = self.dataset_start_time - timedelta(minutes=1)
         else:
             self.dataset_start_time = datetime.now()
-            self.time_offset = timedelta(0)
+            self.virtual_start_time = datetime.now()
 
     def _load_and_prep_data(self):
         """Loads Kaggle CSV, parses dates, and filters out internal support emails."""
@@ -56,9 +56,17 @@ class SimulatedEmailService:
         return df.sort_values(by='timestamp').reset_index(drop=True)
 
     def get_current_virtual_time(self) -> datetime:
-        """Calculates what time it currently 'is' in our simulated dataset timeline."""
+        """Calculates virtual time based on elapsed real time * speed multiplier"""
         real_now = datetime.now()
-        return real_now + self.time_offset * self.virtual_speedup_factor
+        
+        # 1. How much actual time has passed since we booted the app?
+        real_time_elapsed = real_now - self.app_start_real_time
+        
+        # 2. Fast-forward that elapsed time
+        virtual_time_elapsed = real_time_elapsed * self.virtual_speedup_factor
+        
+        # 3. Add the sped-up elapsed time to our starting point in the dataset
+        return self.virtual_start_time + virtual_time_elapsed
 
     def fetch_new_incoming_emails(self, processed_ids: list) -> list:
         """
@@ -82,7 +90,7 @@ class SimulatedEmailService:
                     "email_id": email_id,
                     "sender_email": row['sender'],
                     "subject": row['subject'],
-                    "email_content": row['body'],
+                    "email_content": row['message_body'],
                     "dataset_timestamp": row['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
                 })
         return new_emails

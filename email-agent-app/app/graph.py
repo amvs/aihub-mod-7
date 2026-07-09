@@ -6,6 +6,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
 import yaml
+import datetime
 
 load_dotenv()
 
@@ -26,6 +27,7 @@ class EmailAgentState(TypedDict):
     email_content: str # don't need annotate class or operator.add because we don't need to keep more than one email at a time
     sender_email: str
     email_id: str
+    timestamp: datetime.datetime
 
     # Classification result
     classification: EmailClassification | None
@@ -103,6 +105,7 @@ def bug_tracking(state: EmailAgentState) -> EmailAgentState:
 def write_response(state: EmailAgentState) -> Command[Literal["human_review", "send_reply"]]:
     "Generate response using context and route based on quality"""
 
+    llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
     classification = state.get('classification', {})
 
     # Format context from raw state data on demand
@@ -166,7 +169,8 @@ def human_review(state: EmailAgentState) -> Command[Literal["send_reply", END]]:
         "draft_response": state.get('draft_response', ""),
         "urgency": classification.get('urgency'),
         "intent": classification.get('intent'),
-        "action": "Please review and approve/edit this response"
+        "action": "Please review and approve/edit this response",
+        "sender_email": state['sender_email'],
     })
 
     # Now process the human's decision
@@ -207,6 +211,8 @@ def build_graph():
     builder.add_edge("classify_intent", "bug_tracking")
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
+    builder.add_edge("write_response", "human_review")
+    builder.add_edge("human_review", "send_reply")
     builder.add_edge("send_reply", END)
 
     # Compile with checkpointer for persistence
@@ -226,3 +232,5 @@ def build_graph():
 # TODO - on more advanced branch, add a function to fetch customer history from a mock database, so we can simulate more complex scenarios
 
 # TODO - on more advanced branch, add MCP with tools like searching the internet, calling APIs, etc. to simulate a more capable agent
+
+# TODO: on advanced branch add a reasoning node

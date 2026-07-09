@@ -52,7 +52,6 @@ with col1:
         for thread_id, payload in list(st.session_state.active_interrupts.items()):
             with st.container(border=True):
                 st.markdown(f"**From:** {payload['sender_email']}")
-                st.markdown(f"**Subject:** {payload['subject']}")
                 st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}")
                 
                 with st.expander("Show Original Customer Content"):
@@ -95,6 +94,34 @@ with col1:
                             st.rerun()
 
 with col2:
-    st.subheader("System Logs & Execution Activity")
-    # This section can hit a backend API to show a history of completed items
-    st.info("Logs will populate as you process reviews. Students can keep LangSmith open in another tab to view the live execution traces.")
+    st.subheader("📊 System Logs & Execution Activity")
+    
+    # Add a small manual refresh button for the logs
+    col2_1, col2_2 = st.columns([3, 1])
+    with col2_2:
+        if st.button("🔄 Refresh Logs", use_container_width=True):
+            st.rerun()
+            
+    # Fetch logs from the backend
+    try:
+        logs_response = requests.get(f"{BACKEND_URL}/agent/logs")
+        if logs_response.status_code == 200:
+            logs = logs_response.json()
+            
+            if not logs:
+                st.info("No completed actions yet. Process an email to see logs!")
+            else:
+                # Display logs in reverse order (newest at the top)
+                for log in reversed(logs):
+                    with st.container(border=True):
+                        # Use Streamlit's markdown to color-code based on the action
+                        if log["color"] == "green":
+                            st.success(f"**{log['action']}**")
+                        else:
+                            st.error(f"**{log['action']}**")
+                            
+                        st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
+        else:
+            st.warning("Could not fetch logs from backend.")
+    except requests.exceptions.ConnectionError:
+        st.error("Backend disconnected.")
