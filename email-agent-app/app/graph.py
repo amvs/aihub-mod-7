@@ -162,14 +162,15 @@ def write_response(state: EmailAgentState) -> Command[Literal["human_review", "s
         goto = goto
     )
 
-def human_review(state: EmailAgentState) -> Command[Literal["send_reply", END]]:
+# 1. Update the Literal hint to include your new node
+def human_review(state: EmailAgentState) -> Command[Literal["send_reply", "escalate_ticket"]]:
     """Pause for human review using interrupt and route based on decision"""
     logger.info('entering human_review')
 
     classification = state.get('classification', {})
 
-    logger.info(f"Interrupting for human review: {state['email_id']} from {state['sender_email']} with urgency {classification.get('urgency')} and intent {classification.get('intent')}")
-    # Interrupt() must come first - any code before it will re-run on resume
+    logger.info(f"Interrupting for human review: {state['email_id']}")
+    
     human_decision = interrupt({
         "email_id": state['email_id'],
         "original_email": state['email_content'],
@@ -178,18 +179,16 @@ def human_review(state: EmailAgentState) -> Command[Literal["send_reply", END]]:
         "intent": classification.get('intent'),
         "action": "Please review and approve/edit this response",
         "sender_email": state['sender_email'],
-        # "dataset_timestamp": state['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
     })
 
-    # Now process the human's decision
     if human_decision.get("approved"):
         return Command(
             update = {"draft_response": human_decision.get("edited_response", state['draft_response'])},
             goto = "send_reply"
         )
     else:
-        # Rejection means human will handle directly
-        return Command(update = {}, goto = END)
+        # 2. Tell it explicitly to go to the escalation node instead of END
+        return Command(update = {}, goto = "escalate_ticket")
 
 def send_reply(state: EmailAgentState) -> EmailAgentState:
     """Send the email response"""
@@ -207,14 +206,12 @@ def route_after_review(state: EmailAgentState):
 def escalate_ticket(state: EmailAgentState):
     """Handles what happens when an email is rejected by the reviewer."""
     # Here you might update a database, tag the ticket as 'Needs Manual Support', etc.
+    logger.info(f"Ticket {state['email_id']} was escalated and will NOT be emailed by the agent.")
     print(f"Ticket {state['email_id']} was escalated and will NOT be emailed by the agent.")
     return state
 
 def build_graph():
-    # Create the graph
-    # llm = ChatOpenAI(model="gpt-5-mini")
     logger.info("Building LangGraph state machine for Email Agent")
-
     builder = StateGraph(EmailAgentState)
 
     # Add nodes
@@ -227,9 +224,7 @@ def build_graph():
     builder.add_node("send_reply", send_reply)
     builder.add_node("escalate_ticket", escalate_ticket)
     
-
-
-    # Add edges
+    # Add standard edges
     builder.add_edge(START, "read_email")
     builder.add_edge("read_email", "classify_intent")
     builder.add_edge("classify_intent", "search_documentation")
@@ -237,19 +232,14 @@ def build_graph():
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
     builder.add_edge("write_response", "human_review")
-    builder.add_conditional_edges(
-        "human_review", 
-        route_after_review,
-        {
-            "send": "send_reply",
-            "escalate": "escalate_ticket"
-        }
-    )
-
+    
+    # Notice we don't add an edge OUT of human_review here. 
+    # The `Command(goto=...)` handles it for us!
+    
+    # Ensure the final nodes connect to END
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
 
-    # Compile with checkpointer for persistence
     memory = InMemorySaver()
     app = builder.compile(checkpointer = memory)
     # TODO - add thread id for email threads - stored in dataset as column thread_id
