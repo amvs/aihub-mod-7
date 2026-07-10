@@ -7,6 +7,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
 import yaml
 import datetime
+import logging
 
 load_dotenv()
 
@@ -15,6 +16,8 @@ with open("config.yml", "r") as file:
 
 LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
 LLM_MODEL = config["backend"]["llm"]["model"]
+
+logger = logging.getLogger("uvicorn.error")
 
 class EmailClassification(TypedDict):
     intent: Literal["question", "bug", "billing", "feature", "complex"]
@@ -27,7 +30,7 @@ class EmailAgentState(TypedDict):
     email_content: str # don't need annotate class or operator.add because we don't need to keep more than one email at a time
     sender_email: str
     email_id: str
-    timestamp: datetime.datetime
+    timestamp: str
 
     # Classification result
     classification: EmailClassification | None
@@ -53,6 +56,7 @@ def read_email(state: EmailAgentState) -> EmailAgentState:
 
 def classify_intent(state: EmailAgentState) -> EmailAgentState:
     """Use LLM to classify email intent and urgency, then route accordingly"""
+    logger.info('entering classify_intent')
 
     llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
 
@@ -76,7 +80,7 @@ def classify_intent(state: EmailAgentState) -> EmailAgentState:
 
 def search_documentation(state: EmailAgentState) -> EmailAgentState:
     """Search knowledge base for relevant information"""
-
+    logger.info('entering search_documentation')
     # Build search query from classification
     classification = state.get('classification', {})
     query = f"{classification.get('intent', '')} {classification.get('topic', '')}"
@@ -96,7 +100,7 @@ def search_documentation(state: EmailAgentState) -> EmailAgentState:
 
 def bug_tracking(state: EmailAgentState) -> EmailAgentState:
     """Create or update bug tracking ticket"""
-
+    logger.info('entering bug_tracking')
     # Create ticket in your bug tracking system
     ticket_id = f"BUG_{uuid.uuid4()}"
 
@@ -104,7 +108,7 @@ def bug_tracking(state: EmailAgentState) -> EmailAgentState:
 
 def write_response(state: EmailAgentState) -> Command[Literal["human_review", "send_reply"]]:
     "Generate response using context and route based on quality"""
-
+    logger.info('entering write_response')
     llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
     classification = state.get('classification', {})
 
@@ -138,6 +142,7 @@ def write_response(state: EmailAgentState) -> Command[Literal["human_review", "s
     """
 
     response = llm.invoke(draft_prompt)
+    logger.info(f"Draft response generated in write_response")
 
     # Determine if human review is needed based on urgency and intent
     needs_review = (
@@ -159,9 +164,11 @@ def write_response(state: EmailAgentState) -> Command[Literal["human_review", "s
 
 def human_review(state: EmailAgentState) -> Command[Literal["send_reply", END]]:
     """Pause for human review using interrupt and route based on decision"""
+    logger.info('entering human_review')
 
     classification = state.get('classification', {})
 
+    logger.info(f"Interrupting for human review: {state['email_id']} from {state['sender_email']} with urgency {classification.get('urgency')} and intent {classification.get('intent')}")
     # Interrupt() must come first - any code before it will re-run on resume
     human_decision = interrupt({
         "email_id": state['email_id'],
@@ -171,6 +178,7 @@ def human_review(state: EmailAgentState) -> Command[Literal["send_reply", END]]:
         "intent": classification.get('intent'),
         "action": "Please review and approve/edit this response",
         "sender_email": state['sender_email'],
+        # "dataset_timestamp": state['timestamp'].strftime('%Y-%m-%d %H:%M:%S')
     })
 
     # Now process the human's decision
@@ -192,6 +200,7 @@ def send_reply(state: EmailAgentState) -> EmailAgentState:
 def build_graph():
     # Create the graph
     # llm = ChatOpenAI(model="gpt-5-mini")
+    logger.info("Building LangGraph state machine for Email Agent")
 
     builder = StateGraph(EmailAgentState)
 
@@ -234,3 +243,5 @@ def build_graph():
 # TODO - on more advanced branch, add MCP with tools like searching the internet, calling APIs, etc. to simulate a more capable agent
 
 # TODO: on advanced branch add a reasoning node
+
+# TODO: on advanced branch add rag to allow searching a knowledge base and retrieving relevant information to inform the agent's response
