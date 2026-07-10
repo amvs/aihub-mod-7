@@ -51,11 +51,12 @@ with col1:
         # Loop through any LangGraph states that hit an `interrupt()`
         for thread_id, payload in list(st.session_state.active_interrupts.items()):
             with st.container(border=True):
+                # st.markdown(payload.keys())
                 st.markdown(f"**From:** {payload['sender_email']}")
-                st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}")
+                st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}, Urgency: {payload.get('urgency', 'Unknown')}, Intent: {payload.get('intent', 'Unknown')}")
                 
                 with st.expander("Show Original Customer Content"):
-                    st.text(payload['email_content'])
+                    st.text(payload['original_email'])
                 
                 st.write("---")
                 st.markdown("**Proposed Agent Reply:**")
