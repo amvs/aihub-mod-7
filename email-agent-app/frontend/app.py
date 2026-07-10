@@ -1,9 +1,12 @@
 import streamlit as st
 import requests
 import time
+import yaml
 
-# Configuration pointing to your FastAPI backend container/process
-BACKEND_URL = "http://localhost:8000"
+with open("config.yml", "r") as file:
+    config = yaml.safe_load(file)
+
+BACKEND_URL = config["backend"]["url"]
 
 st.set_page_config(page_title="AetherOS Email Agent Control Center", layout="wide")
 st.title("📥 Agent Control Center (Simulated Environment)")
@@ -20,7 +23,9 @@ with st.sidebar:
     if st.button("🔄 Check for New Emails", type="primary"):
         # 1. Ask FastAPI to pull from email_service.py and ingest into LangGraph
         try:
+            st.write("Posting requests to backend to check inbox...")
             response = requests.post(f"{BACKEND_URL}/agent/check-inbox")
+            st.write(response.status_code)
             if response.status_code == 200:
                 data = response.json()
                 st.success(f"Ingested {data.get('new_emails_count', 0)} new emails into the workflow!")
@@ -46,12 +51,12 @@ with col1:
         # Loop through any LangGraph states that hit an `interrupt()`
         for thread_id, payload in list(st.session_state.active_interrupts.items()):
             with st.container(border=True):
+                # st.markdown(payload.keys())
                 st.markdown(f"**From:** {payload['sender_email']}")
-                st.markdown(f"**Subject:** {payload['subject']}")
-                st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}")
+                st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}, Urgency: {payload.get('urgency', 'Unknown')}, Intent: {payload.get('intent', 'Unknown')}")
                 
                 with st.expander("Show Original Customer Content"):
-                    st.text(payload['email_content'])
+                    st.text(payload['original_email'])
                 
                 st.write("---")
                 st.markdown("**Proposed Agent Reply:**")
@@ -90,6 +95,34 @@ with col1:
                             st.rerun()
 
 with col2:
-    st.subheader("System Logs & Execution Activity")
-    # This section can hit a backend API to show a history of completed items
-    st.info("Logs will populate as you process reviews. Students can keep LangSmith open in another tab to view the live execution traces.")
+    st.subheader("📊 System Logs & Execution Activity")
+    
+    # Add a small manual refresh button for the logs
+    col2_1, col2_2 = st.columns([3, 1])
+    with col2_2:
+        if st.button("🔄 Refresh Logs", use_container_width=True):
+            st.rerun()
+            
+    # Fetch logs from the backend
+    try:
+        logs_response = requests.get(f"{BACKEND_URL}/agent/logs")
+        if logs_response.status_code == 200:
+            logs = logs_response.json()
+            
+            if not logs:
+                st.info("No completed actions yet. Process an email to see logs!")
+            else:
+                # Display logs in reverse order (newest at the top)
+                for log in reversed(logs):
+                    with st.container(border=True):
+                        # Use Streamlit's markdown to color-code based on the action
+                        if log["color"] == "green":
+                            st.success(f"**{log['action']}**")
+                        else:
+                            st.error(f"**{log['action']}**")
+                            
+                        st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
+        else:
+            st.warning("Could not fetch logs from backend.")
+    except requests.exceptions.ConnectionError:
+        st.error("Backend disconnected.")

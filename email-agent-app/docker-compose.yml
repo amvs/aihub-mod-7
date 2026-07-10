@@ -1,0 +1,32 @@
+services:
+  # --- Service 1: The FastAPI Backend Agent ---
+  api:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    image: email-agent-api:latest
+    container_name: email_agent_api
+    command: uv run uvicorn app.main:api --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    env_file:
+      - ../.env # Safely pulls your API keys 
+    volumes:
+      - .:/workspace # Mounts code locally so changes update without rebuilding
+    restart: unless-stopped
+
+  # --- Service 2: The Streamlit Frontend ---
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: email-agent-frontend:latest
+    container_name: email_agent_ui
+    command: streamlit run frontend/app.py --server.port 8501 --server.address 0.0.0.0
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api # Ensures the backend spins up before the UI attempts to connect
+    volumes:
+      - .:/workspace
+    restart: unless-stopped
