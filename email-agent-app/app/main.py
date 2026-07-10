@@ -4,7 +4,8 @@ from uuid import uuid4
 import logging
 from langgraph.types import Command
 from app.email_service import SimulatedEmailService
-import datetime
+from datetime import datetime
+from pydantic import BaseModel
 
 api = FastAPI()
 graph_app = build_graph()
@@ -19,10 +20,10 @@ COMPLETED_LOGS = []
 
 
 @api.post("/agent/start")
-def start_agent(email_content: str, sender: str):
+def start_agent(email: dict):
     thread_id = str(uuid4())
     config = {"configurable": {"thread_id": thread_id}}
-    initial_state = {"email_content": email_content, "sender_email": sender, "email_id": f"mail_{thread_id}"}
+    initial_state = {"email_content": email["email_content"], "sender_email": email["sender_email"], "email_id": f"mail_{thread_id}", "timestamp": email.get("dataset_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
     
     graph_app.invoke(initial_state, config)
     state_snapshot = graph_app.get_state(config)
@@ -47,33 +48,37 @@ def get_pending_reviews():
     # Streamlit calls this to populate the dashboard!
     return PENDING_REVIEWS_DB
 
+class ApprovalRequest(BaseModel):
+    thread_id: str
+    approved: bool
+    edited_response: str | None = None
+
 @api.post("/agent/approve")
-def approve_agent(thread_id: str, approved: bool, edited_response: str = None):
-    config = {"configurable": {"thread_id": thread_id}}
+def approve_agent(req: ApprovalRequest): # <-- Accept the Pydantic model
+    config = {"configurable": {"thread_id": req.thread_id}}
     
     # Resume the LangGraph by providing the human input back to the Command
-    decision = {"approved": approved, "edited_response": edited_response}
+    decision = {"approved": req.approved, "edited_response": req.edited_response}
     
-    # In newer LangGraph versions using interrupt(), you pass the resume value via Command
-    from langgraph.types import Command # Make sure this is imported!
+    from langgraph.types import Command
     graph_app.invoke(Command(resume=decision), config)
     
     # Clean up the pending tracker
-    if thread_id in PENDING_REVIEWS_DB:
-        del PENDING_REVIEWS_DB[thread_id]
+    if req.thread_id in PENDING_REVIEWS_DB:
+        del PENDING_REVIEWS_DB[req.thread_id]
         
-    # --- NEW: Add to our completed logs ---
+    # --- Add to our completed logs ---
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    if approved:
+    if req.approved:
         COMPLETED_LOGS.append({
-            "thread_id": thread_id, 
+            "thread_id": req.thread_id, 
             "action": "Approved & Sent", 
             "timestamp": timestamp,
             "color": "green"
         })
     else:
         COMPLETED_LOGS.append({
-            "thread_id": thread_id, 
+            "thread_id": req.thread_id, 
             "action": "Rejected & Escalated", 
             "timestamp": timestamp,
             "color": "red"
@@ -95,7 +100,7 @@ def check_inbox():
     new_emails = email_service.fetch_new_incoming_emails(check_inbox.processed_ids)
     logging.info(f"Fetched {len(new_emails)} new emails from the dataset.")
     for email in new_emails:
-        start_agent(email_content=email['email_content'], sender=email['sender_email'])
+        start_agent(email=email)
         check_inbox.processed_ids.append(email['email_id'])
     
     return {"new_emails_count": len(new_emails)}

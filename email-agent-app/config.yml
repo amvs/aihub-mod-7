@@ -5,4 +5,4 @@ backend:
     model: llama-3.3-70b-versatile
     temperature: 0
   email_agent:
-    virtual_speedup_factor: 1000.0
+    virtual_speedup_factor: 3600.0 # every second of real time is treated as 1 hour of virtual time
