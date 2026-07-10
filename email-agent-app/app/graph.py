@@ -245,24 +245,3 @@ def build_graph():
     # TODO - add thread id for email threads - stored in dataset as column thread_id
     return app
 
-
-
-# --- Updating your Graph Compilation ---
-# (Replace your existing edges after human_review with this)
-
-
-# TODO add a function to get active interrupts for the front-end to poll and display
-
-# TODO - add a config for the LLM model to use, so we can swap out for different models in the future
-
-# TODO - add a walkthrough of switching to a persistent memory checkpointer, so we can persist state across restarts and scale to multiple agents - maybe this is for more advanced branch?
-
-# TODO - add documentation that agent can search
-
-# TODO - on more advanced branch, add a function to fetch customer history from a mock database, so we can simulate more complex scenarios
-
-# TODO - on more advanced branch, add MCP with tools like searching the internet, calling APIs, etc. to simulate a more capable agent
-
-# TODO: on advanced branch add a reasoning node
-
-# TODO: on advanced branch add rag to allow searching a knowledge base and retrieving relevant information to inform the agent's response
