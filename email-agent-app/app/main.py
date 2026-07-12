@@ -23,25 +23,48 @@ COMPLETED_LOGS = []
 def start_agent(email: dict):
     thread_id = str(uuid4())
     config = {"configurable": {"thread_id": thread_id}}
-    initial_state = {"email_content": email["email_content"], "sender_email": email["sender_email"], "email_id": f"mail_{thread_id}", "timestamp": email.get("dataset_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))}
+    initial_state = {
+        "email_content": email["email_content"], 
+        "sender_email": email["sender_email"], 
+        "email_id": f"mail_{thread_id}", 
+        "timestamp": email.get("dataset_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    }
     
     graph_app.invoke(initial_state, config)
     state_snapshot = graph_app.get_state(config)
     
+    # Case 1: The graph paused for human review
     if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
         interrupt_payload = state_snapshot.tasks[0].interrupts[0].value
         PENDING_REVIEWS_DB[thread_id] = interrupt_payload
         return {"status": "AWAITING_REVIEW", "thread_id": thread_id}
         
+    # Case 2: The graph finished completely
     else:
-        # --- If it finished without an interrupt, log it! ---
-        COMPLETED_LOGS.append({
-            "thread_id": thread_id, 
-            "action": "Auto-Processed (No Review Needed)", 
-            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            "color": "blue"
-        })
-        return {"status": "COMPLETED", "thread_id": thread_id}
+        # Extract the final values from the state dictionary
+        final_state = state_snapshot.values
+        security_info = final_state.get("security_analysis") or {}
+        
+        # Check if the security node flagged this as high risk
+        if security_info.get("risk_level") == "high":
+            COMPLETED_LOGS.append({
+                "thread_id": thread_id, 
+                "action": "Security Escalation (Blocked)", 
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "color": "orange",
+                "details": security_info.get("concerns", "Flagged by security system.")
+            })
+            return {"status": "SECURITY_ESCALATED", "thread_id": thread_id}
+            
+        # Case 3: It was genuinely safe and cleared automatically
+        else:
+            COMPLETED_LOGS.append({
+                "thread_id": thread_id, 
+                "action": "Auto-Processed (No Review Needed)", 
+                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "color": "blue"
+            })
+            return {"status": "COMPLETED", "thread_id": thread_id}
 
 @api.get("/agent/pending-reviews")
 def get_pending_reviews():

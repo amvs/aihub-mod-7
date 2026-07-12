@@ -37,11 +37,24 @@ with st.sidebar:
                 # Display logs in reverse order (newest at the top)
                 for log in reversed(logs):
                     with st.container(border=True):
-                        # Use Streamlit's markdown to color-code based on the action
-                        if log["color"] == "green":
+                        
+                        color = log.get("color", "gray")
+                        
+                        # Map our custom log colors to Streamlit's native alert boxes
+                        if color == "green":
                             st.success(f"**{log['action']}**")
-                        else:
+                        elif color == "red":
                             st.error(f"**{log['action']}**")
+                        elif color == "orange":
+                            st.warning(f"**{log['action']}**")
+                        elif color == "blue":
+                            st.info(f"**{log['action']}**")
+                        else:
+                            st.write(f"**{log['action']}**")
+                            
+                        # If the security node added a reason for blocking, display it!
+                        if "details" in log:
+                            st.markdown(f"**Reason:** {log['details']}")
                             
                         st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
         else:
