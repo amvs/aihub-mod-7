@@ -25,10 +25,6 @@ class EmailClassification(TypedDict):
     topic: str
     summary: str
 
-class EmailSecurityAnalysis(TypedDict):
-    risk_level: Literal["low", "medium", "high"]
-    concerns: str
-    recommended_action: str
 
 class EmailAgentState(TypedDict):
     # Raw email data
@@ -38,7 +34,7 @@ class EmailAgentState(TypedDict):
     timestamp: str
 
     # security tracking
-    security_analysis: EmailSecurityAnalysis | None
+    security_analysis: str | None
 
     # Classification result
     classification: EmailClassification | None
@@ -241,12 +237,12 @@ def security_check(state: EmailAgentState) -> Command[Literal["classify_intent",
     Provide a classification of the email's security risk level (low, medium, high) and any specific concerns. If the email is deemed high risk, recommend escalation.
     """
 
-    security_analysis = llm.with_structured_output(EmailSecurityAnalysis).invoke(security_prompt)
+    security_analysis = llm.invoke(security_prompt)
 
     logger.info(f"Security analysis completed: {security_analysis}")
 
     # Simple logic to determine if escalation is needed
-    if security_analysis['risk_level'] == 'high':
+    if 'high security risk' in security_analysis.content.lower():
         return Command(update={"security_analysis": security_analysis}, goto="escalate_ticket")
     
     return Command(update={"security_analysis": security_analysis}, goto="classify_intent")

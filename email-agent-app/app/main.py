@@ -46,13 +46,13 @@ def start_agent(email: dict):
         security_info = final_state.get("security_analysis") or {}
         
         # Check if the security node flagged this as high risk
-        if security_info.get("risk_level") == "high":
+        if "high security risk" in security_info.content.lower():
             COMPLETED_LOGS.append({
                 "thread_id": thread_id, 
                 "action": "Security Escalation (Blocked)", 
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "color": "orange",
-                "details": security_info.get("concerns", "Flagged by security system.")
+                "details": security_info.content
             })
             return {"status": "SECURITY_ESCALATED", "thread_id": thread_id}
             
