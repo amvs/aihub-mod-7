@@ -19,13 +19,45 @@ if "active_interrupts" not in st.session_state:
 
 # --- Sidebar Controls ---
 with st.sidebar:
-    st.header("Simulation Settings")
+    st.subheader("📊 System Logs & Execution Activity")
+    
+    # Add a small manual refresh button for the logs
+    if st.button("🔄 Refresh Logs", use_container_width=True):
+        st.rerun()
+        
+    # Fetch logs from the backend
+    try:
+        logs_response = requests.get(f"{BACKEND_URL}/agent/logs")
+        if logs_response.status_code == 200:
+            logs = logs_response.json()
+            
+            if not logs:
+                st.info("No completed actions yet. Process an email to see logs!")
+            else:
+                # Display logs in reverse order (newest at the top)
+                for log in reversed(logs):
+                    with st.container(border=True):
+                        # Use Streamlit's markdown to color-code based on the action
+                        if log["color"] == "green":
+                            st.success(f"**{log['action']}**")
+                        else:
+                            st.error(f"**{log['action']}**")
+                            
+                        st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
+        else:
+            st.warning("Could not fetch logs from backend.")
+    except requests.exceptions.ConnectionError:
+        st.error("Backend disconnected.")
+
+# --- Main Dashboard Split Layout ---
+col1, col2 = st.columns([1, 2])
+
+with col1:
+    st.header("Update Inbox")
     if st.button("🔄 Check for New Emails", type="primary"):
         # 1. Ask FastAPI to pull from email_service.py and ingest into LangGraph
         try:
-            st.write("Posting requests to backend to check inbox...")
             response = requests.post(f"{BACKEND_URL}/agent/check-inbox")
-            st.write(response.status_code)
             if response.status_code == 200:
                 data = response.json()
                 st.success(f"Ingested {data.get('new_emails_count', 0)} new emails into the workflow!")
@@ -40,10 +72,7 @@ with st.sidebar:
     st.write("---")
     st.caption("This dashboard simulates a live workspace. Clicking refresh advances the virtual timeline and surfaces emails waiting for Human-in-the-Loop approval.")
 
-# --- Main Dashboard Split Layout ---
-col1, col2 = st.columns([1, 1])
-
-with col1:
+with col2:
     st.subheader("Awaiting Human Review")
     if not st.session_state.active_interrupts:
         st.info("No emails require review right now. Splendid!")
@@ -93,36 +122,3 @@ with col1:
                             st.toast("Escalated to Tier 2 support.")
                             del st.session_state.active_interrupts[thread_id]
                             st.rerun()
-
-with col2:
-    st.subheader("📊 System Logs & Execution Activity")
-    
-    # Add a small manual refresh button for the logs
-    col2_1, col2_2 = st.columns([3, 1])
-    with col2_2:
-        if st.button("🔄 Refresh Logs", use_container_width=True):
-            st.rerun()
-            
-    # Fetch logs from the backend
-    try:
-        logs_response = requests.get(f"{BACKEND_URL}/agent/logs")
-        if logs_response.status_code == 200:
-            logs = logs_response.json()
-            
-            if not logs:
-                st.info("No completed actions yet. Process an email to see logs!")
-            else:
-                # Display logs in reverse order (newest at the top)
-                for log in reversed(logs):
-                    with st.container(border=True):
-                        # Use Streamlit's markdown to color-code based on the action
-                        if log["color"] == "green":
-                            st.success(f"**{log['action']}**")
-                        else:
-                            st.error(f"**{log['action']}**")
-                            
-                        st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
-        else:
-            st.warning("Could not fetch logs from backend.")
-    except requests.exceptions.ConnectionError:
-        st.error("Backend disconnected.")
