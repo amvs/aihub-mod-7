@@ -3,11 +3,12 @@ from typing import Literal, TypedDict
 from langchain_groq import ChatGroq
 from langgraph.types import Command, interrupt
 from langgraph.graph import END, START, StateGraph
-from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.memory import SqliteSaver
 from dotenv import load_dotenv
 import yaml
 import datetime
 import logging
+import sqlite3
 
 load_dotenv()
 
@@ -283,8 +284,9 @@ def build_graph():
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
 
-    memory = InMemorySaver()
+    conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
+    memory = SqliteSaver(conn)
     app = builder.compile(checkpointer = memory)
-    # TODO - add thread id for email threads - stored in dataset as column thread_id
+
     return app
 

@@ -6,6 +6,7 @@ from langgraph.types import Command
 from app.email_service import SimulatedEmailService
 from datetime import datetime
 from pydantic import BaseModel
+import uuid
 
 api = FastAPI()
 graph_app = build_graph()
@@ -21,12 +22,12 @@ COMPLETED_LOGS = []
 
 @api.post("/agent/start")
 def start_agent(email: dict):
-    thread_id = str(uuid4())
+    thread_id = email.get("thread_id", str(uuid4()))
     config = {"configurable": {"thread_id": thread_id}}
     initial_state = {
         "email_content": email["email_content"], 
         "sender_email": email["sender_email"], 
-        "email_id": f"mail_{thread_id}", 
+        "email_id": f"mail_{uuid.uuid4()}", 
         "timestamp": email.get("dataset_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     }
     
