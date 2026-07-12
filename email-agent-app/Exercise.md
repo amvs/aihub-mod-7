@@ -1,4 +1,4 @@
-# Exercise
+# Exercise: Section 2
 
 We found a bug in our agent - it doesn't route rejected emails properly!
 When we interrupt for human review, if we 
@@ -53,3 +53,19 @@ builder.add_node("escalate_ticket", escalate_ticket)
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
 ```
+
+# Exercise: Section 3
+
+We added a `security_check` node to our graph to check whether an incoming email is attempting a cyberattack, before passing it on to the rest of our graph.
+This is a good practice for any input to your agent that you do not control; the `security_check` node should have very limited access to tools, files, etc.
+
+However, right now our `security_check` node is fragile, becasue we do a simple string match between the LLM output and "high security risk." 
+What if the LLM instead calls it "high risk"? Our `security_check` will fail and will write a response to the email without flagging it!
+
+Luckily, we can require the LLM to give us a structured output.
+We already do this in the `classify_intent` node, calling `llm.with_structured_output(EmailClassification)`.
+
+Set up a class to store the security analysis output.
+It should have a `risk` attribute with levels low, medium, or high.
+Then modify `security_check` to use this structured output.
+Depending on the structure of your class, you may need to update the front end to work with the new class instead of the raw LLM output.
