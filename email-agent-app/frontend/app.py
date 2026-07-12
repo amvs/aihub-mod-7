@@ -54,7 +54,8 @@ with st.sidebar:
                             
                         # If the security node added a reason for blocking, display it!
                         if "details" in log:
-                            st.markdown(f"**Reason:** {log['details']}")
+                            with st.expander("View Details"):
+                                st.markdown(f"**Reason:** {log['details']}")
                             
                         st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
         else:
