@@ -270,11 +270,7 @@ def build_graph():
     # builder.add_edge("classify_intent", "bug_tracking")
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
-    builder.add_edge("write_response", "human_review")
-    
-    # Notice we don't add an edge OUT of human_review here. 
-    # The `Command(goto=...)` handles it for us!
-    
+
     # Ensure the final nodes connect to END
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
