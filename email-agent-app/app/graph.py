@@ -38,7 +38,7 @@ class EmailSecurityAnalysis(TypedDict):
 class CustomerHistory(TypedDict):
     customer_email: str
     account_tier: Literal["standard", "premium", "vip"]
-    num_previous_tickets: int
+    num_interactions: int
     last_interaction_date: str | None
     preferred_contact_method: str
     preferred_tools: list[str]
@@ -95,7 +95,7 @@ def read_email(state: EmailAgentState, store: BaseStore) -> EmailAgentState:
         customer_history = {
             "customer_email": sender,
             "account_tier": "standard",
-            "num_previous_tickets": 0,
+            "num_interactions": 0,
             "last_interaction_date": None,
             "preferred_contact_method": "email",
             "preferred_tools": [],
@@ -354,7 +354,7 @@ def update_customer_history(state: EmailAgentState, store: BaseStore) -> EmailAg
 
     sender = state['sender_email']
     customer_history = state.get('customer_history', {})
-    current_num_tickets = customer_history.get('num_previous_tickets', 0)
+    current_num_tickets = customer_history.get('num_interactions', 0)
 
     llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
     structured_llm = llm.with_structured_output(CustomerHistory)
@@ -382,12 +382,14 @@ def update_customer_history(state: EmailAgentState, store: BaseStore) -> EmailAg
     """)
 
     # Update fields based on the current interaction
-    customer_history['num_previous_tickets'] = current_num_tickets + 1 # make sure hallucinations don't mess up ticket count
+    customer_history['num_interactions'] = current_num_tickets + 1 # make sure hallucinations don't mess up ticket count
     customer_history['last_interaction_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 
     # Save updated profile back to the store
     store.put(namespace=("customer_history",), key=sender, value=customer_history)
+
+    logger.info(f"Updated customer history for {sender}: {customer_history}")
 
     return {"customer_history": customer_history}
 

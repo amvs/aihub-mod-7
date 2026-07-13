@@ -130,7 +130,7 @@ LangGraph has two types of memory, which serve different purposes:
 
 Our goal in this exercise is to add a `customer_profiles` table to our existing SQLite database.
 You will then teach the agent to look up the sender's history at the beginning of an email, use that history to draft a better response, and update the customer's profile at the end of the interaction.
-The only new syntax we need is:
+We only need a little bit of new syntax to create the store:
 ```python
 checkpointer = SqliteSaver(conn) # already have this line
 store = SqliteStore(conn)
@@ -139,7 +139,9 @@ store.setup() # ensures database tables for the store exist
 graph = builder.compile(checkpointer=checkpointer, store=store) # modified version of our current builder.compile line
 ```
 
-If we want to track multiple types of entities (e.g. tracking customers and bugs), both get stored in the same global store, but are separated by namespaces:
+To retrieve from or update the store, we need to call `store.get` or `store.put` respectively.
+If we are working inside of a node, make sure that `store` is an argument for the function defining the node.
+If we want to track multiple types of entities (e.g. tracking customers and bugs), both are kept in the same global store, but are separated by namespaces:
 ```python
 customer_id = "customer_123"
 bug_id = "bug_456"
@@ -169,6 +171,6 @@ Add this syntax to our `build_graph` function, and add the following elements to
     a) Update `read_email` to query the customer's profile using `sender_email`. If a profile exists, load it into the state. You'll need to add a `store` argument to `read_email`.
     b) Update `write_response` to include the customer's history in the context to the LLM while drafting a response.
     c) Update the history. Add a new node before the graph finishes that summarizes the current conversation and updates the profile in the global store.
-3) Update the frontend so that we can see and validate our new customer history.
+3) (Optional) Update the frontend so that we can see and validate our new customer history.
     a) In `main.py` add a new FastAPI route (e.g. `/agents/customer/{customer_id}`) that retrieves info about the current customer.
     b) Add a new Streamlit tab or expander to display the info from your new endpoint.
