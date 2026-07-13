@@ -35,7 +35,7 @@ def display_memory(thread_id):
                         role = msg.get("role", "unknown")
                         avatar_role = "user" if role == "human" else "assistant" if role == "ai" else "secondary"
                         with st.chat_message(name=avatar_role):
-                            st.caption(f"**Type:** `{role}`")
+                            st.caption(f"**Type:** {role}, **Message Type**: {msg.get('message_type', 'N/A')}")
                             st.write(msg.get("content", ""))
             else:
                 st.error(f"Failed to load memory. Status: {mem_response.status_code}")

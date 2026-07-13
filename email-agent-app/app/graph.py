@@ -188,12 +188,16 @@ def write_response(state: EmailAgentState) -> Command[Literal["human_review", "s
     # Route to the appropriate next node
     if needs_review:
         goto = "human_review"
-        print("Needs approval")
+        logger.info("Draft needs approval")
+        state_update = {'draft_response': response.content, 'messages': [AIMessage(content=response.content,
+                                               metadata={'type': 'Draft_Response'})]}
+
     else:
         goto = "send_reply"
+        state_update = {'draft_response': response.content, } # don't update messages because we will log it in send_reply
 
     return Command(
-        update = {"draft_response": response.content},
+        update = state_update,
         goto = goto
     )
 
@@ -229,7 +233,7 @@ def send_reply(state: EmailAgentState) -> EmailAgentState:
     """Send the email response"""
     # Integrate with a email service
     print(f"Sending reply: {state['draft_response'][:60]}...")
-    agent_reply = AIMessage(content=state['draft_response'])
+    agent_reply = AIMessage(content=state['draft_response'], metadata={'type': 'Final_Sent_Email'})
     return {"messages": [agent_reply]}
 
 
@@ -275,7 +279,7 @@ def security_check(state: EmailAgentState) -> Command[Literal["classify_intent",
     {state['email_content']}
     </customer_email>
     """
-    safe_message = HumanMessage(content=store_message)
+    safe_message = HumanMessage(content=store_message, metadata={"type": "Customer_Email"})
 
     
     return Command(update={"security_analysis": security_analysis,
@@ -335,7 +339,6 @@ def build_graph():
     # builder.add_edge("classify_intent", "bug_tracking")
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
-    builder.add_edge("write_response", "human_review")
     
     # Notice we don't add an edge OUT of human_review here. 
     # The `Command(goto=...)` handles it for us!

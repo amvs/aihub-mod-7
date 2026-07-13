@@ -134,6 +134,7 @@ def check_inbox():
 class MessageModel(BaseModel):
     role: str
     content: str
+    message_type: str | None = None
 
 class MemoryResponse(BaseModel):
     conversation_summary: Optional[str] = None
@@ -163,7 +164,9 @@ def get_conversation_memory(thread_id: str):
     for msg in raw_messages:
         role = getattr(msg, "type", "unknown")
         content = getattr(msg, "content", str(msg))
-        formatted_messages.append(MessageModel(role=role, content=content))
+        metadata = getattr(msg, "metadata", {})
+        message_type = metadata.get("type", None)
+        formatted_messages.append(MessageModel(role=role, content=content, message_type=message_type))
     
     return MemoryResponse(
         conversation_summary=conversation_summary,
