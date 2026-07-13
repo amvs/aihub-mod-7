@@ -2,7 +2,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 import yaml
+import logging
 
+logger = logging.getLogger("uvicorn.error")
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
@@ -16,8 +18,8 @@ class SimulatedEmailService:
         # Record exactly when the Streamlit/API app booted up
         # We simulate that "App Start Time" is 1 minute BEFORE the earliest email in the data
         self.app_start_real_time = datetime.now()
-        self.df = self._load_and_prep_data()
         self.download_if_missing = download_if_missing
+        self.df = self._load_and_prep_data()
         self.virtual_speedup_factor = EMAIL_AGENT_SPEEDUP
         
         if not self.df.empty:

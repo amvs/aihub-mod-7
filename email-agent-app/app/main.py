@@ -16,7 +16,7 @@ email_service = SimulatedEmailService()
 # --- NEW: In-Memory Tracker for the Workshop ---
 # This will store thread_id -> interrupt payload
 PENDING_REVIEWS_DB = {} 
-COMPLETED_LOGS = [] 
+COMPLETED_LOGS = []
 
 
 @api.post("/agent/start")

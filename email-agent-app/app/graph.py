@@ -220,7 +220,6 @@ def build_graph():
     builder.add_edge("classify_intent", "bug_tracking")
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
-    builder.add_edge("write_response", "human_review")
     builder.add_edge("human_review", "send_reply")
     builder.add_edge("send_reply", END)
 
