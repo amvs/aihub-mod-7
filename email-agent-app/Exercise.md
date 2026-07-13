@@ -116,3 +116,59 @@ def security_check(state: EmailAgentState) -> Command[Literal["classify_intent",
     
     return Command(update={"security_analysis": security_analysis}, goto="classify_intent")
 ```
+
+
+# Exercise: Section 4
+
+Our agent has excellent memory within a conversation, thanks to the SQLite checkpointer.
+However, it has no memory across conversations.
+If Isiah emails us in a new conversation next week, the agent will start from a blank slate and won't remember the conversation we had this week!
+
+LangGraph has two types of memory, which serve different purposes:
+* Thread memory (checkpointer): tracking the messages within a conversation.
+* Global memory (store): tracks facts, preferences, and history about entities involved in conversation (like users, organizations, or documents) over time.
+
+Our goal in this exercise is to add a `customer_profiles` table to our existing SQLite database.
+You will then teach the agent to look up the sender's history at the beginning of an email, use that history to draft a better response, and update the customer's profile at the end of the interaction.
+The only new syntax we need is:
+```python
+checkpointer = SqliteSaver(conn) # already have this line
+store = SqliteStore(conn)
+store.setup() # ensures database tables for the store exist
+
+graph = builder.compile(checkpointer=checkpointer, store=store) # modified version of our current builder.compile line
+```
+
+If we want to track multiple types of entities (e.g. tracking customers and bugs), both get stored in the same global store, but are separated by namespaces:
+```python
+customer_id = "customer_123"
+bug_id = "bug_456"
+
+# retrieve customer info:
+customer_namespace = ("customers", customer_id)
+customer_history = store.get(customer_namespace, "history")
+
+all_customer_history = store.search(("customers",), ) # retrieve all customer history, e.g. want to search for partial matches
+
+if customer_history:
+    print(f"Customer Name: customer_history.name")
+
+# conversation between customer and agent
+# want to update customer record at the end
+store.put(customer_namespace,
+        "history",
+        {customer_history_dict})
+```
+
+Add this syntax to our `build_graph` function, and add the following elements to make sure our agent remembers customers across multiple conversations:
+
+1) Create the global store, using the syntax above. Make sure you:
+    a) Create a new class to hold structured info about the customer (e.g. how many tickets/emails have they sent in the past?).
+    b) Update `EmailAgentState` to include a new key to hold the customer's history.
+2) Wire the graph to read and write the customer's history:
+    a) Update `read_email` to query the customer's profile using `sender_email`. If a profile exists, load it into the state.
+    b) Update `write_response` to include the customer's history in the context to the LLM while drafting a response.
+    c) Update the history. Add a new node before the graph finishes that summarizes the current conversation and updates the profile in the global store.
+3) Update the frontend so that we can see and validate our new customer history.
+    a) In `main.py` add a new FastAPI route (e.g. `/agents/customer/{customer_id}`) that retrieves info about the current customer.
+    b) Add a new Streamlit tab or expander to display the info from your new endpoint.

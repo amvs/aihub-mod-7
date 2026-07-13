@@ -11,6 +11,37 @@ BACKEND_URL = config["backend"]["url"]
 st.set_page_config(page_title="AetherOS Email Agent Control Center", layout="wide")
 st.title("📥 Agent Control Center (Simulated Environment)")
 
+def display_memory(thread_id):
+    with st.expander("View Agent Memory & Context", expanded=False):
+        try:
+            mem_response = requests.get(f"{BACKEND_URL}/agent/memory/{thread_id}")
+            if mem_response.status_code == 200:
+                memory_data = mem_response.json()
+                summary = memory_data.get("conversation_summary")
+                messages = memory_data.get("messages", [])
+                
+                st.markdown("### Summary")
+                if summary:
+                    st.info(summary)
+                else:
+                    st.caption("No summary generated yet. (Threshold not reached)")
+                    
+                st.divider()
+                st.markdown("### 💬 Raw Message Array")
+                if not messages:
+                    st.caption("No messages in memory for this thread.")
+                else:
+                    for msg in messages:
+                        role = msg.get("role", "unknown")
+                        avatar_role = "user" if role == "human" else "assistant" if role == "ai" else "secondary"
+                        with st.chat_message(name=avatar_role):
+                            st.caption(f"**Type:** `{role}`")
+                            st.write(msg.get("content", ""))
+            else:
+                st.error(f"Failed to load memory. Status: {mem_response.status_code}")
+        except requests.exceptions.RequestException:
+            st.error("Could not connect to the backend API to fetch memory.")
+
 # Initialize session states for tracking things in Streamlit memory
 if "processed_emails" not in st.session_state:
     st.session_state.processed_emails = []
@@ -56,6 +87,7 @@ with st.sidebar:
                         if "details" in log:
                             with st.expander("View Details"):
                                 st.markdown(f"**Reason:** {log['details']}")
+                        display_memory(thread_id=log['thread_id'])  # Show memory for this thread if available
                             
                         st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
         else:
@@ -69,13 +101,11 @@ col1, col2 = st.columns([1, 2])
 with col1:
     st.header("Update Inbox")
     if st.button("🔄 Check for New Emails", type="primary"):
-        # 1. Ask FastAPI to pull from email_service.py and ingest into LangGraph
         try:
             response = requests.post(f"{BACKEND_URL}/agent/check-inbox")
             if response.status_code == 200:
                 data = response.json()
                 st.success(f"Ingested {data.get('new_emails_count', 0)} new emails into the workflow!")
-                # Refresh state of pending reviews
                 review_resp = requests.get(f"{BACKEND_URL}/agent/pending-reviews")
                 st.session_state.active_interrupts = review_resp.json()
             else:
@@ -94,17 +124,18 @@ with col2:
         # Loop through any LangGraph states that hit an `interrupt()`
         for thread_id, payload in list(st.session_state.active_interrupts.items()):
             with st.container(border=True):
-                # st.markdown(payload.keys())
                 st.markdown(f"**From:** {payload['sender_email']}")
                 st.caption(f"Simulated Arrival: {payload.get('dataset_timestamp', 'Unknown')}, Urgency: {payload.get('urgency', 'Unknown')}, Intent: {payload.get('intent', 'Unknown')}")
                 
                 with st.expander("Show Original Customer Content"):
                     st.text(payload['original_email'])
                 
+                display_memory(thread_id=thread_id)
+                # --------------------------------
+                
                 st.write("---")
                 st.markdown("**Proposed Agent Reply:**")
                 
-                # Allow the human reviewer to modify the draft before approving
                 editable_draft = st.text_area(
                     "Edit draft response before sending:", 
                     value=payload['draft_response'], 
@@ -115,7 +146,6 @@ with col2:
                 btn_col1, btn_col2 = st.columns(2)
                 with btn_col1:
                     if st.button("🟢 Approve & Send", key=f"app_{thread_id}", use_container_width=True):
-                        # Resume the specific LangGraph thread via FastAPI
                         res = requests.post(f"{BACKEND_URL}/agent/approve", json={
                             "thread_id": thread_id,
                             "approved": True,

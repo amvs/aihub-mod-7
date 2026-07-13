@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi import APIRouter, HTTPException
 from app.graph import build_graph 
 from uuid import uuid4
 import logging
@@ -7,6 +8,7 @@ from app.email_service import SimulatedEmailService
 from datetime import datetime
 from pydantic import BaseModel
 import uuid
+from typing import List, Optional
 
 api = FastAPI()
 graph_app = build_graph()
@@ -128,3 +130,42 @@ def check_inbox():
         check_inbox.processed_ids.append(email['email_id'])
     
     return {"new_emails_count": len(new_emails)}
+
+class MessageModel(BaseModel):
+    role: str
+    content: str
+
+class MemoryResponse(BaseModel):
+    conversation_summary: Optional[str] = None
+    messages: List[MessageModel]
+
+# --- API Endpoint ---
+@api.get("/agent/memory/{thread_id}", response_model=MemoryResponse)
+def get_conversation_memory(thread_id: str):
+    logger.info(f"Fetching memory for thread_id: {thread_id}")
+    config = {"configurable": {"thread_id": thread_id}}
+    
+    try:
+        state_snapshot = graph_app.get_state(config)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+    
+    # If the thread has no history yet, return an empty response
+    if not state_snapshot or not state_snapshot.values:
+        return MemoryResponse(conversation_summary=None, messages=[])
+    
+    # Extract the data
+    conversation_summary = state_snapshot.values.get("conversation_summary")
+    raw_messages = state_snapshot.values.get("messages", [])
+    
+    # Format the LangChain messages using their .type attribute
+    formatted_messages = []
+    for msg in raw_messages:
+        role = getattr(msg, "type", "unknown")
+        content = getattr(msg, "content", str(msg))
+        formatted_messages.append(MessageModel(role=role, content=content))
+    
+    return MemoryResponse(
+        conversation_summary=conversation_summary,
+        messages=formatted_messages
+    )
