@@ -74,35 +74,11 @@ class EmailAgentState(TypedDict):
 
 
 
-def read_email(state: EmailAgentState, store: BaseStore) -> EmailAgentState:
+def read_email(state: EmailAgentState) -> EmailAgentState:
     """Extract and parse email content"""
     # we will pass email contents directly to agent
     # if we needed to open a file we would do that here
-    logger.info('entering read_email')
-    # retrieve customer history from store
-    sender = state['sender_email']
-    
-    # 2. Query the global store using the correct namespace and key
-    # Namespace is the "folder" (tuple), Key is the specific item (string)
-    profile_item = store.get(namespace=("customer_history",), key=sender)
-    
-    # 3. Check if we found a profile in the database
-    if profile_item:
-        # The actual dictionary is stored in the `.value` attribute of the returned Item
-        customer_history = profile_item.value
-    else:
-        # If this is a brand new customer, initialize a blank profile!
-        customer_history = {
-            "customer_email": sender,
-            "account_tier": "standard",
-            "num_previous_tickets": 0,
-            "last_interaction_date": None,
-            "preferred_contact_method": "email",
-            "preferred_tools": [],
-            "pet_peeves": []
-        }
-        
-    return {"customer_history": customer_history}
+    pass
 
 
 def classify_intent(state: EmailAgentState) -> Command[Literal["search_documentation", "bug_tracking", "escalate_ticket"]]:
@@ -382,12 +358,10 @@ def build_graph():
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
 
-    conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False, isolation_level=None)
+    conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
     memory = SqliteSaver(conn)
-    store = SqliteStore(conn)
-    store.setup()  # Ensure the store is initialized
 
-    app = builder.compile(checkpointer = memory, store=store)
+    app = builder.compile(checkpointer = memory)
 
     return app
 
