@@ -393,7 +393,7 @@ def update_customer_history(state: EmailAgentState, store: BaseStore) -> EmailAg
 
     return {"customer_history": customer_history}
 
-def build_graph():
+def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> StateGraph[EmailAgentState]:
     logger.info("Building LangGraph state machine for Email Agent")
     builder = StateGraph(EmailAgentState)
 
@@ -428,12 +428,15 @@ def build_graph():
     builder.add_edge("send_reply", "update_customer_history")
     builder.add_edge("update_customer_history", END)
 
-    conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
-    memory = SqliteSaver(conn)
-    store = SqliteStore(conn)
+    if checkpointer is None or store is None:
+        conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
+        if checkpointer is None:
+            checkpointer = SqliteSaver(conn)
+        if store is None:
+            store = SqliteStore(conn)
     store.setup()  # Ensure the store is initialized
 
-    app = builder.compile(checkpointer = memory, store=store)
+    app = builder.compile(checkpointer = checkpointer, store=store)
 
     return app
 

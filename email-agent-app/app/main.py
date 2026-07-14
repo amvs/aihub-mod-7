@@ -4,6 +4,8 @@ from app.graph import build_graph
 from uuid import uuid4
 import logging
 from langgraph.types import Command
+from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.store.sqlite import SqliteStore
 from app.email_service import SimulatedEmailService
 from datetime import datetime
 from pydantic import BaseModel
@@ -25,16 +27,14 @@ COMPLETED_LOGS = []
 @api.post("/agent/start")
 def start_agent(email: dict):
     thread_id = email.get("thread_id", str(uuid4()))
-    config = {"configurable": {"thread_id": thread_id}}
     initial_state = {
         "email_content": email["email_content"], 
         "sender_email": email["sender_email"], 
         "email_id": f"mail_{uuid.uuid4()}", 
         "timestamp": email.get("dataset_timestamp", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
     }
-    
-    graph_app.invoke(initial_state, config)
-    state_snapshot = graph_app.get_state(config)
+
+    result, state_snapshot = process_email_with_graph(email_data=initial_state, thread_id=thread_id)
     
     # Case 1: The graph paused for human review
     if state_snapshot.tasks and state_snapshot.tasks[0].interrupts:
@@ -68,6 +68,26 @@ def start_agent(email: dict):
                 "color": "blue"
             })
             return {"status": "COMPLETED", "thread_id": thread_id}
+
+def process_email_with_graph(email_data: dict, thread_id: str):
+    """
+    This function is responsible for invoking the LangGraph with the provided email data and thread_id.
+    It uses the SqliteSaver and SqliteStore to manage state persistence.
+    """
+    with SqliteSaver.from_conn_string("email_agent_memory.db") as checkpointer, \
+         SqliteStore.from_conn_string("email_agent_memory.db") as store:
+         
+        # Compile your graph inside the safe context
+        graph_app = build_graph(checkpointer=checkpointer, store=store)
+        
+        
+        # Invoke the graph
+        config = {"configurable": {"thread_id": thread_id}}
+        result = graph_app.invoke(email_data, config=config)
+        state_snapshot = graph_app.get_state(config)
+        
+        return result, state_snapshot
+
 
 @api.get("/agent/pending-reviews")
 def get_pending_reviews():
@@ -172,3 +192,33 @@ def get_conversation_memory(thread_id: str):
         conversation_summary=conversation_summary,
         messages=formatted_messages
     )
+
+
+class CustomerHistoryResponse(BaseModel):
+    customer_id: str
+    num_interactions: int
+    last_interaction_date: Optional[str] = None
+    account_tier: str | None = None
+    relationship_summary: str | None = None
+
+@api.get("/agent/customer/{customer_id}")
+def get_customer_history(customer_id: str):
+    with SqliteStore.from_conn_string("email_agent_memory.db") as store:
+        namespace = ("customer_history",)
+        customer_history = store.get(namespace, key = customer_id)
+    # If no history exists for this customer, return a default response
+    if not customer_history:
+        return CustomerHistoryResponse(
+            customer_id=customer_id,
+            num_interactions=0,
+            last_interaction_date=None,
+            account_tier=None,
+            relationship_summary=None
+        )
+    # Return the actual history if it exists
+    return CustomerHistoryResponse(
+        customer_id=customer_id,
+        num_interactions=customer_history.get("num_interactions", 0),
+        last_interaction_date=customer_history.get("last_interaction_date"),
+        account_tier=customer_history.get("account_tier"),
+        relationship_summary=customer_history.get("relationship_summary"))
