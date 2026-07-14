@@ -324,7 +324,7 @@ def summarize_conversation(state: EmailAgentState) -> EmailAgentState:
         "messages": delete_commands # This shrinks the memory!
     }
 
-def build_graph():
+def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> StateGraph[EmailAgentState]:
     logger.info("Building LangGraph state machine for Email Agent")
     builder = StateGraph(EmailAgentState)
 
@@ -339,6 +339,7 @@ def build_graph():
     builder.add_node("human_review", human_review)
     builder.add_node("send_reply", send_reply)
     builder.add_node("escalate_ticket", escalate_ticket)
+    builder.add_node("update_customer_history", update_customer_history)
     
     
     # Add standard edges
@@ -351,17 +352,23 @@ def build_graph():
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
     
-    # Notice we don't add an edge OUT of human_review here. 
-    # The `Command(goto=...)` handles it for us!
+    # Remember that Command(goto) handles the routing out of write_response AND human_review, so we don't need to add edges for those nodes here. The graph will follow the goto values returned by those nodes.
     
     # Ensure the final nodes connect to END
-    builder.add_edge("escalate_ticket", END)
-    builder.add_edge("send_reply", END)
+    builder.add_edge("escalate_ticket", "update_customer_history")
+    builder.add_edge("send_reply", "update_customer_history")
+    builder.add_edge("update_customer_history", END)
 
-    conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
-    memory = SqliteSaver(conn)
+    if checkpointer is None or store is None:
+        conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
+        if checkpointer is None:
+            checkpointer = SqliteSaver(conn)
+        if store is None:
+            store = SqliteStore(conn)
+    store.setup()  # Ensure the store is initialized
 
-    app = builder.compile(checkpointer = memory)
+    app = builder.compile(checkpointer = checkpointer, store=store)
 
     return app
+
 
