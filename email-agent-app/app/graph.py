@@ -338,9 +338,7 @@ def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> 
     builder.add_node("write_response", write_response)
     builder.add_node("human_review", human_review)
     builder.add_node("send_reply", send_reply)
-    builder.add_node("escalate_ticket", escalate_ticket)
-    builder.add_node("update_customer_history", update_customer_history)
-    
+    builder.add_node("escalate_ticket", escalate_ticket)    
     
     # Add standard edges
     builder.add_edge(START, "read_email")
@@ -352,12 +350,11 @@ def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> 
     builder.add_edge("search_documentation", "write_response")
     builder.add_edge("bug_tracking", "write_response")
     
-    # Remember that Command(goto) handles the routing out of write_response AND human_review, so we don't need to add edges for those nodes here. The graph will follow the goto values returned by those nodes.
+    # Remember that Command(goto) handles the routing out of write_response AND human_review, so we don't need to add edges for those nodes here. The graph will follow the goto values returned by those nodes. 
     
     # Ensure the final nodes connect to END
-    builder.add_edge("escalate_ticket", "update_customer_history")
-    builder.add_edge("send_reply", "update_customer_history")
-    builder.add_edge("update_customer_history", END)
+    builder.add_edge("escalate_ticket", END)
+    builder.add_edge("send_reply", END)
 
     if checkpointer is None or store is None:
         conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
