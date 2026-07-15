@@ -145,8 +145,8 @@ customer_id = "customer_123"
 bug_id = "bug_456"
 
 # retrieve customer info:
-customer_namespace = ("customers", customer_id)
-customer_history = store.get(customer_namespace, "history")
+customer_namespace = ("customers",)
+customer_history = store.get(customer_namespace, customer_id)
 
 all_customer_history = store.search(("customers",), ) # retrieve all customer history, e.g. want to search for partial matches
 
@@ -156,7 +156,6 @@ if customer_history:
 # conversation between customer and agent
 # want to update customer record at the end
 store.put(customer_namespace,
-        "history",
         {customer_history_dict})
 ```
 
