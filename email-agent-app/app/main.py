@@ -192,33 +192,3 @@ def get_conversation_memory(thread_id: str):
         conversation_summary=conversation_summary,
         messages=formatted_messages
     )
-
-
-class CustomerHistoryResponse(BaseModel):
-    customer_id: str
-    num_interactions: int
-    last_interaction_date: Optional[str] = None
-    account_tier: str | None = None
-    relationship_summary: str | None = None
-
-@api.get("/agent/customer/{customer_id}")
-def get_customer_history(customer_id: str):
-    with SqliteStore.from_conn_string("email_agent_memory.db") as store:
-        namespace = ("customer_history",)
-        customer_history = store.get(namespace, key = customer_id)
-    # If no history exists for this customer, return a default response
-    if not customer_history:
-        return CustomerHistoryResponse(
-            customer_id=customer_id,
-            num_interactions=0,
-            last_interaction_date=None,
-            account_tier=None,
-            relationship_summary=None
-        )
-    # Return the actual history if it exists
-    return CustomerHistoryResponse(
-        customer_id=customer_id,
-        num_interactions=customer_history.get("num_interactions", 0),
-        last_interaction_date=customer_history.get("last_interaction_date"),
-        account_tier=customer_history.get("account_tier"),
-        relationship_summary=customer_history.get("relationship_summary"))

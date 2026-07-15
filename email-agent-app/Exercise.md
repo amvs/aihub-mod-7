@@ -147,8 +147,8 @@ customer_id = "customer_123"
 bug_id = "bug_456"
 
 # retrieve customer info:
-customer_namespace = ("customers", customer_id)
-customer_history = store.get(customer_namespace, "history")
+customer_namespace = ("customers",)
+customer_history = store.get(customer_namespace, customer_id)
 
 all_customer_history = store.search(("customers",), ) # retrieve all customer history, e.g. want to search for partial matches
 
@@ -172,3 +172,6 @@ Add this syntax to our `build_graph` function, and add the following elements to
     b) Update `write_response` to include the customer's history in the context to the LLM while drafting a response.
     c) Update the history. Add a new node before the graph finishes that summarizes the current conversation and updates the profile in the global store.
 3) Validate the new customer history is working properly by logging it in Docker.
+
+## Solution
+
