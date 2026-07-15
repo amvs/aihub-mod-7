@@ -169,6 +169,4 @@ Add this syntax to our `build_graph` function, and add the following elements to
     a) Update `read_email` to query the customer's profile using `sender_email`. If a profile exists, load it into the state. You'll need to add a `store` argument to `read_email`.
     b) Update `write_response` to include the customer's history in the context to the LLM while drafting a response.
     c) Update the history. Add a new node before the graph finishes that summarizes the current conversation and updates the profile in the global store.
-3) Update the frontend so that we can see and validate our new customer history.
-    a) In `main.py` add a new FastAPI route (e.g. `/agent/customer/{customer_id}`) that retrieves info about the current customer.
-    b) Add a new Streamlit tab or expander to display the info from your new endpoint.
+3) Validate the new customer history is working properly by logging it in Docker.
