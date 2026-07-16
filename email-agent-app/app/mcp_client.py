@@ -144,8 +144,9 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
                 )
 
             # ✅ Passed all checks! Execute the real, underlying MCP Fetch tool
-            return raw_mcp_fetch_tool.invoke({"url": url, **kwargs})
-            
+            raw_result = raw_mcp_fetch_tool.invoke({"url": url, **kwargs})
+            return sanitize_untrusted_content(raw_result)
+
         except Exception as e:
             return f"Error executing fetch: {str(e)}"
 
@@ -195,3 +196,21 @@ def sanitize_untrusted_content(raw_text: str) -> str:
         "</wikipedia_context>"
     )
     return sanitized_output
+
+def apply_wikipedia_guardrails(raw_wiki_article_tool):
+    """
+    Wraps Wikipedia retrieval tools to ensure text is sanitized.
+    """
+    def guarded_wiki_get(title: str, **kwargs):
+        # Execute the raw tool to get the Wikipedia page text
+        raw_article_text = raw_wiki_article_tool.invoke({"title": title, **kwargs})
+        
+        # Sanitize the Wikipedia markdown text immediately!
+        return sanitize_untrusted_content(raw_article_text)
+
+    return StructuredTool.from_function(
+        func=guarded_wiki_get,
+        name=raw_wiki_article_tool.name,
+        description=raw_wiki_article_tool.description,
+        args_schema=raw_wiki_article_tool.args_schema
+    )
