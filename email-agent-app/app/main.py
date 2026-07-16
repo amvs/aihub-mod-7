@@ -76,6 +76,7 @@ def process_email_with_graph(email_data: dict, thread_id: str):
     """
     with SqliteSaver.from_conn_string("email_agent_memory.db") as checkpointer, \
          SqliteStore.from_conn_string("email_agent_memory.db") as store:
+        store.setup()  # Ensure the store is initialized
          
         # Compile your graph inside the safe context
         graph_app = build_graph(checkpointer=checkpointer, store=store)
