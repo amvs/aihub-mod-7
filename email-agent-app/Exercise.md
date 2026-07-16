@@ -263,3 +263,18 @@ def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> 
     # Compile the graph binding both the short-term checkpointer and long-term store
     return builder.compile(checkpointer=checkpointer, store=store)
 ```
+
+# Exercise: Section 5
+
+Right now, the agent only has access to `fetch`.
+This means the agent has to be hardcoded with a dictionary of URLs to visit; if a customer asks about a topic not in the dictionary, the agent is stuck.
+
+Therefore, we will add a new tool: MCP's Wikipedia search server.
+We can set this up using `npx` or `uvx` using `@modelcontextprotocol/server-wikipedia`.
+This will give the agent one additional tool: `search_wikipedia`.
+In addition, wire your agent so that it performs a two-step research process:
+1) Look up a user's problem using the search tool.
+2) Extract the most promising URL from the search results.
+3) Pass that URL to the `fetch` tool to read the page and answer the user.
+
+
