@@ -355,15 +355,7 @@ def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> 
     # Ensure the final nodes connect to END
     builder.add_edge("escalate_ticket", END)
     builder.add_edge("send_reply", END)
-
-    if checkpointer is None or store is None:
-        conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
-        if checkpointer is None:
-            checkpointer = SqliteSaver(conn)
-        if store is None:
-            store = SqliteStore(conn)
-    store.setup()  # Ensure the store is initialized
-
+    
     app = builder.compile(checkpointer = checkpointer, store=store)
 
     return app
