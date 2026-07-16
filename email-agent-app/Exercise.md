@@ -175,3 +175,108 @@ Add this syntax to our `build_graph` function, and add the following elements to
 
 ## Solution
 
+
+To allow our agent to remember customers across entirely separate threads and conversations, we integrated LangGraph's global **`Store`**. This allows the agent to persist persistent user data (like loyalty tiers, previous interaction counts, and preferences) even when the conversational checkpointer memory starts from scratch.
+
+Here are the key changes we made to implement cross-conversation memory:
+
+### 1. Define the Customer Profile Structure & State
+We created a new `TypedDict` to enforce a clean database schema for our customer records, and added a tracking key directly to our `EmailAgentState`[cite: 6]:
+
+```python
+class CustomerHistory(TypedDict):
+    customer_email: str
+    account_tier: Literal["standard", "premium", "vip"]
+    num_interactions: int
+    last_interaction_date: str | None
+    preferred_contact_method: str
+    relationship_summary: str
+
+class EmailAgentState(TypedDict):
+    # ... other keys
+    customer_history: CustomerHistory | None
+```
+
+### 2. Retrieve Profiles on Startup (`read_email`)
+
+We updated `read_email` to request the global store. At the start of every email run, the agent queries the namespace ("customer_history",) using the sender's email as the unique key. If no history exists, it safely initializes a blank profile.
+
+```python
+def read_email(state: EmailAgentState, store: BaseStore) -> EmailAgentState:
+    sender = state['sender_email']
+    
+    # Query the global store
+    profile_item = store.get(namespace=("customer_history",), key=sender)
+    
+    if profile_item:
+        customer_history = profile_item.value
+    else:
+        # Initialize a fresh profile for a new customer
+        customer_history = {
+            "customer_email": sender,
+            "account_tier": "standard",
+            "num_interactions": 0,
+            "last_interaction_date": None,
+            "preferred_contact_method": "email",
+            "relationship_summary": "New customer."
+        }
+        
+    return {"customer_history": customer_history}
+```
+
+### 3. Update Profiles at the End of the Run
+
+We created a dedicated `update_customer_history` node. This node takes the current interaction (the inbound email, response, and classification), increments the ticket counter, updates the date, and saves the updated record back to the global SQLite database.
+
+```python
+def update_customer_history(state: EmailAgentState, store: BaseStore) -> EmailAgentState:
+    sender = state['sender_email']
+    customer_history = state.get('customer_history', {})
+    
+    # Safely increment interaction count
+    current_num_tickets = customer_history.get('num_interactions', 0)
+    customer_history['num_interactions'] = current_num_tickets + 1
+    customer_history['last_interaction_date'] = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    # Save profile back to the global store namespace
+    store.put(namespace=("customer_history",), key=sender, value=customer_history)
+    return {"customer_history": customer_history}
+```
+
+### 4. Wire the Global Store into the Graph
+
+We initialized the `SqliteStore` alongside our checkpointer, passed it directly into our compiled graph, and registered our new node to run right before the graph ends.
+
+```python
+def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> StateGraph[EmailAgentState]:
+    builder = StateGraph(EmailAgentState)
+
+    # Register the nodes
+    builder.add_node("read_email", read_email)
+    builder.add_node("update_customer_history", update_customer_history)
+    # ... other nodes ...
+
+    # Connect final actions to profile saving, then terminate
+    builder.add_edge("escalate_ticket", "update_customer_history")
+    builder.add_edge("send_reply", "update_customer_history")
+    builder.add_edge("update_customer_history", END)
+
+    # Compile the graph binding both the short-term checkpointer and long-term store
+    return builder.compile(checkpointer=checkpointer, store=store)
+```
+
+# Exercise: Section 5
+
+Right now, the agent only has access to `fetch`.
+This means the agent has to be hardcoded with a dictionary of URLs to visit; if a customer asks about a topic not in the dictionary, the agent is stuck.
+
+Therefore, we will add a new tool: MCP's Wikipedia search server.
+We can set this up using `npx` or `uvx` using `@modelcontextprotocol/server-wikipedia`.
+This will give the agent one additional tool: `search_wikipedia`.
+In addition, wire your agent so that it performs a two-step research process:
+1) Look up a user's problem using the search tool.
+2) Extract the most promising URL from the search results.
+3) Pass that URL to the `fetch` tool to read the page and answer the user.
+Finally, since Wikipedia is publicly-editable, there is a risk of prompt injection if we allow our agent to search Wikipedia without guardrails.
+Therefore, add a function that will sanitize the results before passing it along to the next step of the agent.
+
