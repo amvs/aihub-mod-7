@@ -10,8 +10,10 @@ RUN pip install --no-cache-dir uv
 COPY requirements.txt .
 RUN uv pip install --system -r requirements.txt
 
+# Pre-install/cache specific MCP packages (optional but speeds up container boot)
+RUN uv pip install --system mcp-server-sqlite
+
 # Copy the rest of the application
 COPY . .
 
-EXPOSE 8000
-EXPOSE 8501
+CMD ["uvicorn", "main:api", "--host", "0.0.0.0", "--port", "8000"]

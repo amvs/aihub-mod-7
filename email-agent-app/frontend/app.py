@@ -48,6 +48,15 @@ if "processed_emails" not in st.session_state:
 if "active_interrupts" not in st.session_state:
     st.session_state.active_interrupts = {} # thread_id -> email data
 
+try:
+    review_resp = requests.get(f"{BACKEND_URL}/agent/pending-reviews")
+    if review_resp.status_code == 200:
+        st.session_state.active_interrupts = review_resp.json()
+    else:
+        st.session_state.active_interrupts = {}
+except requests.exceptions.ConnectionError:
+    st.session_state.active_interrupts = {}
+
 # --- Sidebar Controls ---
 with st.sidebar:
     st.subheader("📊 System Logs & Execution Activity")

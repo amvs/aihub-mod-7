@@ -2,13 +2,15 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 import yaml
+import logging
+
+logger = logging.getLogger("uvicorn.error")
 
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
 EMAIL_AGENT_SPEEDUP = config["backend"]["email_agent"]["virtual_speedup_factor"]
 
-# TODO - add a config to speed up email timeline, so we can simulate a day of emails in a few minutes for testing
 
 class SimulatedEmailService:
     def __init__(self, csv_path="data/dataset.csv", download_if_missing=True):
@@ -77,6 +79,7 @@ class SimulatedEmailService:
             return []
             
         virtual_now = self.get_current_virtual_time()
+        logger.info(f"Fetching new emails at virtual time: {virtual_now.strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Filter for emails that have "arrived" by now
         arrived_emails = self.df[self.df['timestamp'] <= virtual_now]
