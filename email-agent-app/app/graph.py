@@ -16,6 +16,7 @@ with open("config.yml", "r") as file:
 
 LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
 LLM_MODEL = config["backend"]["llm"]["model"]
+BASIC_LLM = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -51,17 +52,15 @@ def read_email(state: EmailAgentState) -> EmailAgentState:
     """Extract and parse email content"""
     # we will pass email contents directly to agent
     # if we needed to open a file we would do that here
-    pass # TODO
+    pass
 
 
 def classify_intent(state: EmailAgentState) -> EmailAgentState:
     """Use LLM to classify email intent and urgency, then route accordingly"""
     logger.info('entering classify_intent')
 
-    llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
-
     # Create structured LLM that returns EmailClassification dict
-    structured_llm = llm.with_structured_output(EmailClassification)
+    structured_llm = BASIC_LLM.with_structured_output(EmailClassification)
 
     classification_prompt = f"""
     Analyze this customer email and classify it:
@@ -94,7 +93,7 @@ def search_documentation(state: EmailAgentState) -> EmailAgentState:
         ]
     except SearchAPIError as e:
         # For recoverable search errors, store error and continue
-        search_results = [f"Search temporarily unavailable: {str[e]}"]
+        search_results = [f"Search temporarily unavailable: {str(e)}"]
 
     return {"search_results": search_results} # Raw search results or error
 
@@ -109,7 +108,6 @@ def bug_tracking(state: EmailAgentState) -> EmailAgentState:
 def write_response(state: EmailAgentState) -> Command[Literal["human_review", "send_reply"]]:
     "Generate response using context and route based on quality"""
     logger.info('entering write_response')
-    llm = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
     classification = state.get('classification', {})
 
     # Format context from raw state data on demand
@@ -141,7 +139,7 @@ def write_response(state: EmailAgentState) -> Command[Literal["human_review", "s
     - Be brief
     """
 
-    response = llm.invoke(draft_prompt)
+    response = BASIC_LLM.invoke(draft_prompt)
     logger.info(f"Draft response generated in write_response")
 
     # Determine if human review is needed based on urgency and intent
