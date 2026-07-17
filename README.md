@@ -68,11 +68,13 @@ uv add -r requirements.txt
 
 ## Starting Agent UI
 
+# TODO - add requirement to install docker before class - also maybe add image for this class to registry instead of composing it themselves
+
 After section 1, we convert the interactive email agent we built in a Jupyter notebook to one that runs in a Docker container with a Streamlit frontend and FastAPI backend.
 In order to start this container, make sure Docker is installed and running on your computer, and run:
 
 ```bash
-docker compose up --build
+docker compose up --build -d
 ```
 
 To shut down a container, press the `Stop` button in the Docker GUI or run `docker compose stop` to pause your containers or `docker compose down` to stop and clean them up (you will have to rebuild them the next time you start the container).
