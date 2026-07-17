@@ -8,10 +8,10 @@ LangGraph is likely not the best framework for every use case and may not be the
 The repository is organized so that branches contain different sections of the training.
 The sections are:
 * `section-1-basic`: contains Jupyter notebooks exploring LangGraph basics in an interactive setting and establishing a framework for an agent that triages and replies to emails.
-* `section-2-production`: moves code from Jupyter notebooks into `*.py` files that can be put into production; also includes docker container and basic UI for interacting with agent.
-* `section-3-reasoning`: adds reasoning loops to agent.
-* `section-4-mcp`: adds tool calls through MCP.
-* `section-5-memory`: adds more advanced memory management and context compression.
+* `section-2-scripted`: moves code from Jupyter notebooks into `*.py` files that can be put into production; also includes docker container and basic UI for interacting with agent.
+* `section-3-security`: adds security checks to the agent.
+* `section-4-memory`: adds more advanced memory management and context compression.
+* `section-5-tools`: adds tool calling through MCP, and reasoning loops.
 
 
 ## Getting Started
