@@ -69,6 +69,8 @@ uv add -r requirements.txt
 ## Starting Agent UI
 
 # TODO - add requirement to install docker before class - also maybe add image for this class to registry instead of composing it themselves
+# TODO: AND look into options for doing it without docker (or installing in virtual env?)
+# TODO - double check bug with opening dataframe on branch 2
 
 After section 1, we convert the interactive email agent we built in a Jupyter notebook to one that runs in a Docker container with a Streamlit frontend and FastAPI backend.
 In order to start this container, make sure Docker is installed and running on your computer, and run:
