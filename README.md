@@ -65,3 +65,10 @@ uv init
 uv sync
 uv add -r requirements.txt
 ```
+
+# Todo
+
+ add instructions about getting API keys
+
+Also look into internal model wrappers? Won't be ChatOpenAI (at least for Medtronic)
+Azure-hosted models? Set up AzureChatOpenAI option - students will provide their own API key via Inspire (and maybe medtronic?)
