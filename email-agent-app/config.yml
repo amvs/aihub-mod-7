@@ -1,5 +1,8 @@
 backend:
   url: "http://api:8000"
+  email_agent:
+    # every second of real time is treated as 1 hour of virtual time
+    virtual_speedup_factor: 3600.0
 llm:
   # LLM Provider ("groq", "openai", or "azure_openai")
   vendor: "groq"
@@ -17,6 +20,4 @@ azure:
   azure_endpoint: "https://your-resource-name.openai.azure.com/"
 
 
-email_agent:
-  # every second of real time is treated as 1 hour of virtual time
-  virtual_speedup_factor: 3600.0
+
