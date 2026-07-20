@@ -10,7 +10,6 @@ from env_utils import create_llm, doublecheck_env
 import logging
 
 load_dotenv()
-doublecheck_env()  # Check environment variables against .env file
 BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
 
 
