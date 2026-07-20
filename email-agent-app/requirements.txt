@@ -11,3 +11,4 @@ fastapi>=0.100.0
 streamlit>=1.30.0
 pyyaml>=6.0.0
 pydantic>=2.13.4
+langchain-openai>=1.0.0
