@@ -25,5 +25,11 @@ def doublecheck_env(file_path: str):
         else:
             print(f"{key}=<not set>")
 
+    if parsed['MODEL_PROVIDER'] not in ("groq", "openai", "azure_openai"):
+        print(f"Warning: MODEL_PROVIDER is set to {parsed['MODEL_PROVIDER']}, which is not a valid option.")
+
+    if parsed['MODEL_BASE_URL'] and parsed['MODEL_PROVIDER'] != "openai":
+        print(f"Warning: MODEL_BASE_URL is set but MODEL_PROVIDER is {parsed['MODEL_PROVIDER']}. MODEL_BASE_URL is only used with 'openai' provider.")
+
 
 
