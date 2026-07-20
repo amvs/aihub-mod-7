@@ -15,6 +15,28 @@ The sections are:
 
 For sections 2-5 there is an exercise for each branch and an associated `section-#-solution` branch.
 
+For sections 2-5 there is an exercise for each branch and an associated `section-#-solution` branch.
+
+Libraries and tools for AI agents are evolving rapidly. LangGraph was selected for this course because:
+
+1) It illustrates the underlying architectural concepts of AI agents.
+2) It is widely adopted across the industry as of mid-2026.
+
+Note: LangGraph may not be the ideal framework for every specific use case, and the landscape will continue to shift over the coming years.
+Treat this as a foundation for understanding agentic workflows.
+
+## Repository
+
+The training is broken down by sections. Each section corresponds to a specific Git branch:
+
+Branch / Section | Focus | Key Topics
+------ | ------ | -----
+`section-1-basic` | LangGraph Basics | Interactive Jupyter notebooks; building an email triage and reply agent.
+`section-2-scripted` | Productionalizing Code | Moving from notebooks to *.py files; introducing Docker containers and a basic user interface (UI).
+`section-3-security` | Agent Security | Implementing human-in-the-loop and security guardrails.
+`section-4-memory` | Advanced Memory | Managing context, short/long-term memory, and context compression.
+`section-5-tools` | Tools & Reasoning | Tool calling via Model Context Protocol (MCP) and complex reasoning loops.
+
 
 ## Getting Started
 
