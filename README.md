@@ -123,10 +123,3 @@ python path/to/app.py
 ```
 
 Your terminal will output a local URL (e.g., http://localhost:8000 or http://127.0.0.1:5000) that you can open in your browser to access the UI.
-
-# Todo
-
- add instructions about getting API keys
-
-Also look into internal model wrappers? Won't be ChatOpenAI (at least for Medtronic)
-Azure-hosted models? Set up AzureChatOpenAI option - students will provide their own API key via Inspire (and maybe medtronic?)
