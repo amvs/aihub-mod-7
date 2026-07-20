@@ -27,9 +27,6 @@ def doublecheck_env(file_path: str):
         else:
             print(f"{key}=<not set>")
 
-    if parsed['MODEL_PROVIDER'] not in ("groq", "openai", "azure_openai"):
-        print(f"Warning: MODEL_PROVIDER is set to {parsed['MODEL_PROVIDER']}, which is not a valid option.")
-
 
 def create_llm(config_path: str = "config.yml") -> Any:
     """
