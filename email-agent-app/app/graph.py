@@ -11,7 +11,6 @@ import datetime
 import logging
 
 load_dotenv()
-doublecheck_env()  # Check environment variables against .env file
 BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
 
 logger = logging.getLogger("uvicorn.error")
