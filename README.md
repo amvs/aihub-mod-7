@@ -39,7 +39,13 @@ Make a copy of example.env
 cp example.env .env
 ```
 
-Insert API key(s) directly into .env file
+Insert API key(s) directly into .env file. Also update the model provider and the base URL for the model if you are using a company-specific model.
+
+This tutorial was developed using API keys from Groq, which as of July 2026 has a free tier with a relatively high limit on the number of requests/tokens.
+To get an API key for Groq, you will need to [create an account](https://console.groq.com/login) and follow instructions on [getting started/creating an API key](https://console.groq.com/docs/quickstart).
+
+If your employer will be providing access to a model that they subscribe to, please look for instructions from them on obtaining an API key.
+This tutorial is set up to work with OpenAI models hosted on MedtronicGPT and OpenAI models hosted on Azure.
 
 Make a virtual environment and install dependencies from `requirements.txt` file.
 You can use pip instead of uv if you prefer.
