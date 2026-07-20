@@ -1,8 +1,31 @@
 # Module 7: LangGraph
 
-This repository contains the hands-on portion of Module 7, a training for developing AI agents developed by the AI Hub and TLI at UMN, in partnership with Endogenex, Inspire, and Medtronic.
+This repository contains the hands-on portion of Module 7, a training program for developing AI agents. 
+Developed by the AI Hub and TLI at UMN, in partnership with Endogenex, Inspire, and Medtronic.
 
 ## Why LangGraph?
+
+Libraries and tools for AI agents are evolving rapidly. LangGraph was selected for this course because:
+
+1) It illustrates the underlying architectural concepts of AI agents.
+2) It is widely adopted across the industry as of mid-2026.
+
+Note: LangGraph may not be the ideal framework for every specific use case, and the landscape will continue to shift over the coming years.
+Treat this as a foundation for understanding agentic workflows.
+
+## Repository
+
+The training is broken down by sections. Each section corresponds to a specific Git branch:
+
+Branch / Section | Focus | Key Topics
+------ | ------ | -----
+`section-1-basic` | LangGraph Basics | Interactive Jupyter notebooks; building an email triage and reply agent.
+`section-2-scripted` | Productionalizing Code | Moving from notebooks to *.py files; introducing Docker containers and a basic user interface (UI).
+`section-3-security` | Agent Security | Implementing human-in-the-loop and security guardrails.
+`section-4-memory` | Advanced Memory | Managing context, short/long-term memory, and context compression.
+`section-5-tools` | Tools & Reasoning | Tool calling via Model Context Protocol (MCP) and complex reasoning loops.
+
+For sections 2-5 there is an exercise for each branch and an associated `section-#-solution` branch.
 
 Libraries and tools for AI agents are evolving rapidly. LangGraph was selected for this course because:
 
@@ -30,64 +53,77 @@ Branch / Section | Focus | Key Topics
 ### Prerequisites
 
 - Ensure you're using Python 3.11 - 3.13.
-- [uv](https://docs.astral.sh/uv/) package manager or [pip](https://pypi.org/project/pip/)
-- API key for LLM (OpenAI, Anthropic, etc.)
-    - LangGraph is model-agnostic and it is straightforward to swap out a different model/provider.
-    - The tutorial will use Groq, which provides free access to open-source models. These models are **not** being run locally and **no sensitive information** should be shared with these agents.
+- [uv](https://docs.astral.sh/uv/) package manager (recommended) or [pip](https://pypi.org/project/pip/)
+- LLM API Key: Groq, Azure OpenAI, or private OpenAI instance (e.g. MedtronicGPT).
+- Git (to clone the repo and switch between branches).
+- Docker (required for section 2+)
+    - What is it? Docker is a tool that packages software into lightweight, isolated containers containing all the necessary code, runtime, and system tools.
+    - Why we use it: In Section 2, Docker is used to  spin up the agent's web UI and local services without forcing you to manually configure web servers or deal with environment mismatches.
 
+### Step 1: Clone the Repository
 
-Download this repository:
+Download this repository and navigate into the project directory:
 ```bash
 # Clone the repo, cd to 'python' directory
 git clone git@github.com:amvs/aihub-mod-7.git
 cd aihub-mod-7.git
 ```
 
-Make a copy of example.env
+### Step 2: Environment Configuration
+
+Create your local environment file from the provided template:
 
 ```bash
 # Create .env file
 cp example.env .env
 ```
 
-Insert API key(s) directly into .env file. Also update the model provider and the base URL for the model if you are using a company-specific model.
+Open the .env file in your text editor and insert your API keys.
+- Using Groq? Create an account at the Groq Console and follow their Quickstart Guide to generate a free-tier key.
+- Using Corporate Models? If you are using enterprise-provided models (like MedtronicGPT or Azure OpenAI), follow your organization's internal documentation to retrieve your keys and update the model provider/base URL fields in the .env file.
+    - Security Reminder: Groq models run in the cloud, not locally. Do not pass sensitive corporate data or proprietary code to these agents during the training.
 
-This tutorial was developed using API keys from Groq, which as of July 2026 has a free tier with a relatively high limit on the number of requests/tokens.
-To get an API key for Groq, you will need to [create an account](https://console.groq.com/login) and follow instructions on [getting started/creating an API key](https://console.groq.com/docs/quickstart).
+### Step 3: Local Python Setup
 
-If your employer will be providing access to a model that they subscribe to, please look for instructions from them on obtaining an API key.
-This tutorial is set up to work with OpenAI models hosted on MedtronicGPT and OpenAI models hosted on Azure.
-
-Make a virtual environment and install dependencies from `requirements.txt` file.
-You can use pip instead of uv if you prefer.
-
-To create a new venv, run:
+Create a virtual environment and install the required dependencies:
 
 ```bash
-# create venv
-# can specify python version, e.g. python3.11 -m venv .venv
+# Create a virtual environment
 python -m venv .venv
-# activate the env
+
+# Activate the environment
+# On macOS/Linux:
 source .venv/bin/activate
+# On Windows (Command Prompt):
+# .venv\Scripts\activate.bat
+
 ```
 
-Now we can install the packages we need. If `uv` is not installed, you can run `pip install uv` to install it.
+Install the project packages using `uv` (or swap `uv` for standard `pip` if preferred):
 
 
 ```bash
-# set up uv and install dependencies
+# Install uv if you don't have it
+pip install uv
+
+# Synchronize and install dependencies
 uv init
 uv sync
 uv add -r requirements.txt
 ```
 
-## Starting Agent UI
+## Non-Docker Alternatives
 
-After section 1, we convert the interactive email agent we built in a Jupyter notebook to one that runs in a Docker container with a Streamlit frontend and FastAPI backend.
-In order to start this container, make sure Docker is installed and running on your computer, and run:
+If you don't have admin privileges on your laptop and you cannot install Docker Desktop, don't worry.
+You can still complete 100% of this course using one of these options:
 
-```bash
-docker compose up --build
+Because this repository is already built around a standard Python virtual environment, you don't strictly need Docker to run the code or the UI.
+
+- For Section 1: Jupyter Notebooks run entirely inside your local Python virtual environment. No admin rights or Docker needed.
+- For Section 2 (The UI): Instead of running the Docker build commands, you can run the application script directly using Python. Look inside the section-2-scripted code directory for the main application file (typically named app.py, main.py, or similar) and run it straight from your activated terminal:
+
+```python
+python path/to/app.py
 ```
 
-To shut down a container, press the `Stop` button in the Docker GUI or run `docker compose stop` to pause your containers or `docker compose down` to stop and clean them up (you will have to rebuild them the next time you start the container).
+Your terminal will output a local URL (e.g., http://localhost:8000 or http://127.0.0.1:5000) that you can open in your browser to access the UI.
