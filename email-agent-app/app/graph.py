@@ -9,19 +9,15 @@ from langgraph.store.base import BaseStore
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage
 from dotenv import load_dotenv
+from env_utils import create_llm, doublecheck_env
 import yaml
 import datetime
 import logging
 import sqlite3
 
 load_dotenv()
-
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
-LLM_MODEL = config["backend"]["llm"]["model"]
-BASIC_LLM = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+doublecheck_env()  # Check environment variables against .env file
+BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
 
 logger = logging.getLogger("uvicorn.error")
 
