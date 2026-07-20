@@ -11,7 +11,6 @@ with open("config.yml", "r") as file:
 
 EMAIL_AGENT_SPEEDUP = config["backend"]["email_agent"]["virtual_speedup_factor"]
 
-
 class SimulatedEmailService:
     def __init__(self, csv_path="data/dataset.csv", download_if_missing=True):
         self.csv_path = csv_path
@@ -32,28 +31,37 @@ class SimulatedEmailService:
 
     def _load_and_prep_data(self):
         """Loads Kaggle CSV, parses dates, and filters out internal support emails."""
+        # 1. Acquire the data frame based on existence
         if not os.path.exists(self.csv_path):
             if self.download_if_missing:
-                os.mkdir("data") if not os.path.exists("data") else None
+                # Ensure the directory directory structure exists cleanly
+                os.makedirs("data", exist_ok=True)
                 import kagglehub
-                path = kagglehub.dataset_download("rtweera/customer-care-emails", output_dir = './data', force_download=True)
+                path = kagglehub.dataset_download("rtweera/customer-care-emails", output_dir='./data', force_download=True)
                 self.csv_path = os.path.join(path, "dataset.csv")
+                
+                df = pd.read_csv(self.csv_path)
             else:
                 # Fallback mockup if file doesn't exist yet for testing
                 mock_data = {
                     'timestamp': [datetime.now() + timedelta(minutes=2), datetime.now() + timedelta(minutes=5)],
-                    'sender': ['customer1@gmail.com', 'support@aetheros.com'], # support will be filtered out
+                    'sender': ['customer1@gmail.com', 'support@aetheros.com'], 
                     'subject': ['Urgent: Server down', 'Internal ticket updates'],
-                    'body': ['My application is throwing a 500 error.', 'Disregard this internal note.']
+                    'message_body': ['My application is throwing a 500 error.', 'Disregard this internal note.']
                 }
                 df = pd.DataFrame(mock_data)
         else:
             df = pd.read_csv(self.csv_path)
-            df['timestamp'] = df.timestamp.str.split('.').str[0]  # Remove milliseconds if present
+        
+        # 2. Standardize timestamp formatting for all loaded CSV files
+        if 'timestamp' in df.columns:
+            if df['timestamp'].dtype == object:  # If it's stored as strings
+                df['timestamp'] = df['timestamp'].astype(str).str.split('.').str[0]  # Remove milliseconds
             df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         
         # Rule: Exclude internal support email address
         df = df[df['sender'] != 'support@aetheros.com']
+        
         # Sort chronologically to process in order
         return df.sort_values(by='timestamp').reset_index(drop=True)
 
@@ -84,7 +92,7 @@ class SimulatedEmailService:
         # Filter for emails that have "arrived" by now
         arrived_emails = self.df[self.df['timestamp'] <= virtual_now]
         
-        # Filter out already handled rows (assuming your dataset has an 'email_id' or use index)
+        # Filter out already handled rows
         new_emails = []
         for idx, row in arrived_emails.iterrows():
             email_id = f"kaggle_{idx}"
@@ -104,4 +112,3 @@ class SimulatedEmailService:
         print(f"To: {recipient}")
         print(f"Subject: Re: {subject}")
         print(f"Body:\n{body}\n{'-'*40}")
-        # In production, this is where smtplib or Resend API goes.

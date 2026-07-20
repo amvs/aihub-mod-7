@@ -18,8 +18,6 @@ from app.mcp_client import get_tools, apply_fetch_guardrails
 
 
 load_dotenv()
-doublecheck_env()  # Check environment variables against .env file
-
 logger = logging.getLogger("uvicorn.error")
 
 APPROVED_TOOL_NAMES_WITH_GUARDRAILS=['fetch']
