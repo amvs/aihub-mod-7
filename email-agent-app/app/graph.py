@@ -1,3 +1,4 @@
+import os
 import uuid
 from typing import Literal, TypedDict
 from langchain_groq import ChatGroq
@@ -5,11 +6,13 @@ from langgraph.types import Command, interrupt
 from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
+from env_utils import create_llm, doublecheck_env
 import yaml
 import datetime
 import logging
 
 load_dotenv()
+doublecheck_env()
 
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
@@ -17,7 +20,10 @@ with open("config.yml", "r") as file:
 LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
 LLM_MODEL = config["backend"]["llm"]["model"]
 
-BASIC_LLM = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
+BASIC_LLM = create_llm(
+    model=LLM_MODEL,
+    temperature=LLM_TEMPERATURE
+)
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -198,7 +204,6 @@ def send_reply(state: EmailAgentState) -> EmailAgentState:
 
 def build_graph():
     # Create the graph
-    # llm = ChatOpenAI(model="gpt-5-mini")
     logger.info("Building LangGraph state machine for Email Agent")
 
     builder = StateGraph(EmailAgentState)
