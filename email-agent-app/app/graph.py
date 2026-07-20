@@ -7,23 +7,12 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
 from env_utils import create_llm, doublecheck_env
-import yaml
-import datetime
 import logging
 
 load_dotenv()
-doublecheck_env()
+doublecheck_env()  # Check environment variables against .env file
+BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
 
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
-
-LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
-LLM_MODEL = config["backend"]["llm"]["model"]
-
-BASIC_LLM = create_llm(
-    model=LLM_MODEL,
-    temperature=LLM_TEMPERATURE
-)
 
 logger = logging.getLogger("uvicorn.error")
 
