@@ -1,19 +1,29 @@
 # Module 7: LangGraph
 
 This repository contains the hands-on portion of Module 7, a training for developing AI agents developed by the AI Hub and TLI at UMN, in partnership with Endogenex, Inspire, and Medtronic.
-The repository focuses on LangGraph, an open source framework for developing AI agents.
-Libraries and tools for AI agents are changing quickly, and LangGraph was chosen for this tool because 1) it can illustrate many of the underlying concepts in developing AI agents and 2) it is widely used as of mid 2026.
-LangGraph is likely not the best framework for every use case and may not be the best framework two years from now.
 
-The repository is organized so that branches contain different sections of the training.
-The sections are:
-* `section-1-basic`: contains Jupyter notebooks exploring LangGraph basics in an interactive setting and establishing a framework for an agent that triages and replies to emails.
-* `section-2-scripted`: moves code from Jupyter notebooks into *.py files that can be put into production; also includes docker container and basic UI for interacting with agent.
-* `section-3-security`: adds security checks to the agent.
-* `section-4-memory`: adds more advanced memory management and context compression.
-* `section-5-tools`: adds tool calling through MCP, and reasoning loops.
+## Why LangGraph?
 
-For sections 2-5 there is an exercise for each branch and an associated `section-#-solution` branch.
+Libraries and tools for AI agents are evolving rapidly. LangGraph was selected for this course because:
+
+1) It illustrates the underlying architectural concepts of AI agents.
+2) It is widely adopted across the industry as of mid-2026.
+
+Note: LangGraph may not be the ideal framework for every specific use case, and the landscape will continue to shift over the coming years.
+Treat this as a foundation for understanding agentic workflows.
+
+## Repository
+
+The training is broken down by sections. Each section corresponds to a specific Git branch:
+
+Branch / Section | Focus | Key Topics
+------ | ------ | -----
+`section-1-basic` | LangGraph Basics | Interactive Jupyter notebooks; building an email triage and reply agent.
+`section-2-scripted` | Productionalizing Code | Moving from notebooks to *.py files; introducing Docker containers and a basic user interface (UI).
+`section-3-security` | Agent Security | Implementing human-in-the-loop and security guardrails.
+`section-4-memory` | Advanced Memory | Managing context, short/long-term memory, and context compression.
+`section-5-tools` | Tools & Reasoning | Tool calling via Model Context Protocol (MCP) and complex reasoning loops.
+
 
 ## Getting Started
 
