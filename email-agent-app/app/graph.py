@@ -10,6 +10,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage, ToolMessage
 from langgraph.prebuilt import ToolNode, tools_condition
 from dotenv import load_dotenv
+from env_utils import create_llm, doublecheck_env
 import yaml
 import datetime
 import logging
@@ -17,12 +18,10 @@ from app.mcp_client import get_tools, apply_fetch_guardrails, apply_wikipedia_gu
 
 
 load_dotenv()
-logger = logging.getLogger("uvicorn.error")
-with open("config.yml", "r") as file:
-    config = yaml.safe_load(file)
+doublecheck_env()  # Check environment variables against .env file
 
-LLM_TEMPERATURE = config["backend"]["llm"]["temperature"]
-LLM_MODEL = config["backend"]["llm"]["model"]
+logger = logging.getLogger("uvicorn.error")
+
 APPROVED_TOOL_NAMES_WITH_GUARDRAILS=['fetch']
 APPROVED_TOOL_NAMES_WIKI_GUARDRAILS=['search_articles', 'get_summaries', 'get_toc', 'get_section', 'get_page']
 
@@ -31,8 +30,8 @@ logger.info(f"All tools loaded from MCP client: {[tool.name for tool in all_tool
 approved_tools = [apply_fetch_guardrails(tool) if tool.name in APPROVED_TOOL_NAMES_WITH_GUARDRAILS else apply_wikipedia_guardrails(tool) if tool.name in APPROVED_TOOL_NAMES_WIKI_GUARDRAILS else tool for tool in all_tools]
 logger.info(f"Approved tools for the graph: {[tool.name for tool in approved_tools]}")
 
-BASIC_LLM = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE)
-LLM_WITH_TOOLS = ChatGroq(model=LLM_MODEL, temperature=LLM_TEMPERATURE).bind_tools(approved_tools)
+BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
+LLM_WITH_TOOLS = create_llm().bind_tools(approved_tools)
 
 
 class EmailClassification(TypedDict):
