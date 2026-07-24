@@ -2,7 +2,9 @@ import pandas as pd
 from datetime import datetime, timedelta
 import os
 import yaml
+import logging
 
+logger = logging.getLogger("uvicorn.error")
 with open("config.yml", "r") as file:
     config = yaml.safe_load(file)
 
