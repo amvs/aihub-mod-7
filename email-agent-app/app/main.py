@@ -10,10 +10,23 @@ from app.email_service import SimulatedEmailService
 from datetime import datetime
 from pydantic import BaseModel
 import uuid
+import sqlite3
 from typing import List, Optional
 
 api = FastAPI()
-graph_app = build_graph()
+
+# Build a persistent checkpointer/store for the module-level graph_app so endpoints
+# like /agent/approve and /agent/memory/{thread_id} (which use graph_app directly,
+# outside of process_email_with_graph's own scoped connection) have real
+# SqliteSaver/SqliteStore-backed persistence instead of None/None. This connection
+# is intentionally kept open (not a `with` block) since graph_app is a long-lived
+# module-level singleton reused across requests.
+_MEMORY_DB_CONN = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
+_module_checkpointer = SqliteSaver(_MEMORY_DB_CONN)
+_module_store = SqliteStore(_MEMORY_DB_CONN)
+_module_store.setup()  # Ensure the store is initialized
+
+graph_app = build_graph(checkpointer=_module_checkpointer, store=_module_store)
 logger = logging.getLogger("uvicorn.error")
 email_service = SimulatedEmailService()
 
