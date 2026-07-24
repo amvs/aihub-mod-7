@@ -49,8 +49,12 @@ async def lifespan(app: FastAPI):
 api = FastAPI(lifespan=lifespan)
 
 # --- In-Memory Trackers ---
-PENDING_REVIEWS_DB = {} 
-COMPLETED_LOGS = [] 
+PENDING_REVIEWS_DB = {}
+COMPLETED_LOGS = []
+
+# Strong references to fire-and-forget check_inbox tasks so they aren't
+# garbage-collected mid-execution (see asyncio.create_task docs).
+BACKGROUND_TASKS: set[asyncio.Task] = set()
 
 
 @api.post("/agent/start")
@@ -175,7 +179,9 @@ async def check_inbox():
     # non-blocking, concurrent background tasks
     # This responds to the frontend immediately while executing agents in parallel.
     for email in new_emails:
-        asyncio.create_task(start_agent(email=email))
+        task = asyncio.create_task(start_agent(email=email))
+        BACKGROUND_TASKS.add(task)
+        task.add_done_callback(BACKGROUND_TASKS.discard)
         check_inbox.processed_ids.append(email['email_id'])
     
     return {"new_emails_count": len(new_emails)}
