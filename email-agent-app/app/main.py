@@ -1,8 +1,9 @@
 from fastapi import FastAPI
 from fastapi import APIRouter, HTTPException
-from app.graph import build_graph 
+from app.graph import build_graph
 from uuid import uuid4
 import logging
+import sqlite3
 from langgraph.types import Command
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.store.sqlite import SqliteStore
@@ -13,7 +14,19 @@ import uuid
 from typing import List, Optional
 
 api = FastAPI()
-graph_app = build_graph()
+
+# build_graph() no longer creates its own sqlite3 connection when checkpointer/store
+# aren't passed in (that fallback was removed from graph.py's build_graph by the "fix
+# store setup" commit, which moved connection/store.setup() handling into
+# process_email_with_graph() instead). The module-level graph_app is used directly by
+# endpoints like /agent/approve and /agent/memory/{thread_id}, so it needs its own real,
+# persistent SqliteSaver/SqliteStore backed by a shared connection (kept open for the
+# life of the process), mirroring the pattern used in process_email_with_graph().
+_graph_app_conn = sqlite3.connect("email_agent_memory.db", check_same_thread=False)
+_graph_app_checkpointer = SqliteSaver(_graph_app_conn)
+_graph_app_store = SqliteStore(_graph_app_conn)
+_graph_app_store.setup()  # Ensure the store is initialized
+graph_app = build_graph(checkpointer=_graph_app_checkpointer, store=_graph_app_store)
 logger = logging.getLogger("uvicorn.error")
 email_service = SimulatedEmailService()
 
