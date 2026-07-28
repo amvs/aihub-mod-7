@@ -117,11 +117,12 @@ uv add -r requirements.txt
 ### Step 4: Check LLM Configuration
 
 In order to check that your environment and LLM is configured correctly, you can import the `llm_factory` function from `env_utils.py` and run it.
-It should automatically grab API keys and configuration information.
 If it fails, please check your API key and endpoints.
 
 ```python
 from env_utils import llm_factory
+from dotenv import load_dotenv
+load_dotenv()
 llm = llm_factory()
 # if llm creation fails, an error message will be printed
 ```
