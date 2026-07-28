@@ -28,7 +28,7 @@ def doublecheck_env(file_path: str):
             print(f"{key}=<not set>")
 
 
-def create_llm(config_path: str = "config.yml") -> Any:
+def llm_factory(config_path: str = "config.yml") -> Any:
     """
     Creates and returns a LangChain Chat Model instance.
     
@@ -53,7 +53,7 @@ def create_llm(config_path: str = "config.yml") -> Any:
     if provider == "groq":
         from langchain_groq import ChatGroq
         # ChatGroq automatically fetches GROQ_API_KEY from environment
-        return ChatGroq(
+        llm =  ChatGroq(
             model=model, 
             temperature=temperature
         )
@@ -62,7 +62,7 @@ def create_llm(config_path: str = "config.yml") -> Any:
         from langchain_openai import ChatOpenAI
         # ChatOpenAI automatically fetches OPENAI_API_KEY from environment
         base_url = llm_config.get("openai_base_url")
-        return ChatOpenAI(
+        llm = ChatOpenAI(
             model=model,
             temperature=temperature,
             base_url=base_url if base_url else None
@@ -71,13 +71,18 @@ def create_llm(config_path: str = "config.yml") -> Any:
     elif provider == "azure_openai":
         from langchain_openai import AzureChatOpenAI
         # AzureChatOpenAI automatically fetches AZURE_OPENAI_API_KEY from environment
-        return AzureChatOpenAI(
+        llm = AzureChatOpenAI(
             model=model,
             temperature=temperature,
             azure_deployment=llm_config.get("deployment_name"),
             openai_api_version=llm_config.get("api_version"),
             azure_endpoint=llm_config.get("azure_endpoint")
         )
-
     else:
         raise ValueError(f"Unsupported model provider vendor: {provider}")
+
+    try:
+        llm.invoke('hello world')  # Test invocation to ensure the model is set up correctly
+    except Exception as e:
+        raise RuntimeError(f"Failed to invoke the model. Please check your API key and configuration. Error: {e}")
+    return llm
