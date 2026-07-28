@@ -83,6 +83,8 @@ Open the .env file in your text editor and insert your API keys.
 - Using Corporate Models? If you are using enterprise-provided models (like MedtronicGPT or Azure OpenAI), follow your organization's internal documentation to retrieve your keys and update the model provider/base URL fields in the .env file.
     - Security Reminder: Groq models run in the cloud, not locally. Do not pass sensitive corporate data or proprietary code to these agents during the training.
 
+You will also need to update the `config.yml` file to indicate which model provider you would like to use.
+
 ### Step 3: Local Python Setup
 
 Create a virtual environment and install the required dependencies:
@@ -110,6 +112,18 @@ pip install uv
 uv init
 uv sync
 uv add -r requirements.txt
+```
+
+### Step 4: Check LLM Configuration
+
+In order to check that your environment and LLM is configured correctly, you can import the `llm_factory` function from `env_utils.py` and run it.
+It should automatically grab API keys and configuration information.
+If it fails, please check your API key and endpoints.
+
+```python
+from env_utils import llm_factory
+llm = llm_factory()
+# if llm creation fails, an error message will be printed
 ```
 
 ## Non-Docker Alternatives
