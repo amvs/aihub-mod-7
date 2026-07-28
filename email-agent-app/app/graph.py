@@ -9,14 +9,14 @@ from langgraph.store.base import BaseStore
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage
 from dotenv import load_dotenv
-from env_utils import create_llm, doublecheck_env
+from env_utils import llm_factory, doublecheck_env
 import yaml
 import datetime
 import logging
 import sqlite3
 
 load_dotenv()
-BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
+BASIC_LLM = llm_factory()  # Create LLM instance based on config and environment
 
 logger = logging.getLogger("uvicorn.error")
 
