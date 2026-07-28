@@ -1,6 +1,8 @@
 # env_utils.py
 import os
 from dotenv import dotenv_values
+import yaml
+from typing import Any, Dict
 
 def summarize_value(value: str) -> str:
     """Return masked form: ****last4 or boolean string."""
@@ -25,24 +27,62 @@ def doublecheck_env(file_path: str):
         else:
             print(f"{key}=<not set>")
 
-    if parsed['MODEL_PROVIDER'] not in ("groq", "openai", "azure_openai"):
-        print(f"Warning: MODEL_PROVIDER is set to {parsed['MODEL_PROVIDER']}, which is not a valid option.")
 
+def llm_factory(config_path: str = "config.yml") -> Any:
+    """
+    Creates and returns a LangChain Chat Model instance.
+    
+    This function automatically reads non-sensitive settings (provider, model, 
+    endpoints) from the centralized config.yml, while relying on system 
+    environment variables strictly for API keys.
+    """
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"Configuration file not found at: {config_path}")
 
-def create_llm(model_provider: str, model_base_url: str = "", deployment_name: str = "", open_ai_api_version: str = "", azure_openai_api_base: str = "", **kwargs):
-    """Create an LLM instance based on the model provider and parameters."""
-    if model_provider == "groq":
+    # 1. Load configuration parameters from YAML
+    with open(config_path, "r") as file:
+        config = yaml.safe_load(file)
+
+    llm_config: Dict[str, Any] = config.get("backend", {}).get("llm", {})
+    
+    provider = llm_config.get("vendor", "groq").lower()
+    model = llm_config.get("model", "llama-3.3-70b-versatile")
+    temperature = float(llm_config.get("temperature", 0.0))
+
+    # 2. Return configured model with secrets automatically loaded from local environment
+    if provider == "groq":
         from langchain_groq import ChatGroq
-        return ChatGroq(model=kwargs.get('model', 'llama-3.3-70b-versatile'), temperature = kwargs.get('temperature', 0.0))
-    elif model_provider == "openai":
-        from langchain_openai import OpenAI
-        return OpenAI(base_url=model_base_url)
-    elif model_provider == "azure_openai":
+        # ChatGroq automatically fetches GROQ_API_KEY from environment
+        llm =  ChatGroq(
+            model=model, 
+            temperature=temperature
+        )
+
+    elif provider == "openai":
+        from langchain_openai import ChatOpenAI
+        # ChatOpenAI automatically fetches OPENAI_API_KEY from environment
+        base_url = llm_config.get("openai_base_url")
+        llm = ChatOpenAI(
+            model=model,
+            temperature=temperature,
+            base_url=base_url if base_url else None
+        )
+
+    elif provider == "azure_openai":
         from langchain_openai import AzureChatOpenAI
-        return AzureChatOpenAI(
-            deployment_name=deployment_name,
-            openai_api_version=open_ai_api_version,
-            azure_endpoint=azure_openai_api_base
+        # AzureChatOpenAI automatically fetches AZURE_OPENAI_API_KEY from environment
+        llm = AzureChatOpenAI(
+            model=model,
+            temperature=temperature,
+            azure_deployment=llm_config.get("deployment_name"),
+            openai_api_version=llm_config.get("api_version"),
+            azure_endpoint=llm_config.get("azure_endpoint")
         )
     else:
-        raise ValueError(f"Unsupported model provider: {model_provider}")
+        raise ValueError(f"Unsupported model provider vendor: {provider}")
+
+    try:
+        llm.invoke('hello world')  # Test invocation to ensure the model is set up correctly
+    except Exception as e:
+        raise RuntimeError(f"Failed to invoke the model. Please check your API key and configuration. Error: {e}")
+    return llm
