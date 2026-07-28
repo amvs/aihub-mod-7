@@ -98,10 +98,7 @@ You can still complete 100% of this course using one of these options:
 Because this repository is already built around a standard Python virtual environment, you don't strictly need Docker to run the code or the UI.
 
 - For Section 1: Jupyter Notebooks run entirely inside your local Python virtual environment. No admin rights or Docker needed.
-- For Section 2 (The UI): Instead of running the Docker build commands, you can run the application script directly using Python. Look inside the section-2-scripted code directory for the main application file (typically named app.py, main.py, or similar) and run it straight from your activated terminal:
-
-```python
-python path/to/app.py
-```
-
-Your terminal will output a local URL (e.g., http://localhost:8000 or http://127.0.0.1:5000) that you can open in your browser to access the UI.
+- For Section 2 (The UI): Instead of running the Docker build commands, you can run the application script directly using Python.
+    1) Update `config.yml`: change line 2 `url: "http://api:8000"` to `url: "http://localhost:8000"` (referencing `api` only works inside of Docker)
+    2) Navigate in your terminal to the `email-agent-app` folder and run: `uvicorn app.main:api --reload` to start the FastAPI server. (If uvicorn is not recognized, try running `python -m uvicorn app.main:api --reload`.)
+    3) Open a second terminal, navigate to the `email-agent-app` folder again and start the Streamlit frontend:  `streamlit run frontend/app.py`. Streamlit will automatically launch the UI in your web browser at http://localhost:8501, connected directly to your local backend server.
