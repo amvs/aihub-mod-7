@@ -6,13 +6,13 @@ from langgraph.types import Command, interrupt
 from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
-from env_utils import create_llm, doublecheck_env
+from env_utils import llm_factory, doublecheck_env
 import yaml
 import datetime
 import logging
 
 load_dotenv()
-BASIC_LLM = create_llm()  # Create LLM instance based on config and environment
+BASIC_LLM = llm_factory()  # Create LLM instance based on config and environment
 
 
 logger = logging.getLogger("uvicorn.error")
