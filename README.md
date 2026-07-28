@@ -25,6 +25,28 @@ Branch / Section | Focus | Key Topics
 `section-4-memory` | Advanced Memory | Managing context, short/long-term memory, and context compression.
 `section-5-tools` | Tools & Reasoning | Tool calling via Model Context Protocol (MCP) and complex reasoning loops.
 
+For sections 2-5 there is an exercise for each branch and an associated `section-#-solution` branch.
+
+Libraries and tools for AI agents are evolving rapidly. LangGraph was selected for this course because:
+
+1) It illustrates the underlying architectural concepts of AI agents.
+2) It is widely adopted across the industry as of mid-2026.
+
+Note: LangGraph may not be the ideal framework for every specific use case, and the landscape will continue to shift over the coming years.
+Treat this as a foundation for understanding agentic workflows.
+
+## Repository
+
+The training is broken down by sections. Each section corresponds to a specific Git branch:
+
+Branch / Section | Focus | Key Topics
+------ | ------ | -----
+`section-1-basic` | LangGraph Basics | Interactive Jupyter notebooks; building an email triage and reply agent.
+`section-2-scripted` | Productionalizing Code | Moving from notebooks to *.py files; introducing Docker containers and a basic user interface (UI).
+`section-3-security` | Agent Security | Implementing human-in-the-loop and security guardrails.
+`section-4-memory` | Advanced Memory | Managing context, short/long-term memory, and context compression.
+`section-5-tools` | Tools & Reasoning | Tool calling via Model Context Protocol (MCP) and complex reasoning loops.
+
 
 ## Getting Started
 
@@ -61,6 +83,8 @@ Open the .env file in your text editor and insert your API keys.
 - Using Corporate Models? If you are using enterprise-provided models (like MedtronicGPT or Azure OpenAI), follow your organization's internal documentation to retrieve your keys and update the model provider/base URL fields in the .env file.
     - Security Reminder: Groq models run in the cloud, not locally. Do not pass sensitive corporate data or proprietary code to these agents during the training.
 
+You will also need to update the `config.yml` file to indicate which model provider you would like to use.
+
 ### Step 3: Local Python Setup
 
 Create a virtual environment and install the required dependencies:
@@ -88,6 +112,18 @@ pip install uv
 uv init
 uv sync
 uv add -r requirements.txt
+```
+
+### Step 4: Check LLM Configuration
+
+In order to check that your environment and LLM is configured correctly, you can import the `llm_factory` function from `env_utils.py` and run it.
+It should automatically grab API keys and configuration information.
+If it fails, please check your API key and endpoints.
+
+```python
+from env_utils import llm_factory
+llm = llm_factory()
+# if llm creation fails, an error message will be printed
 ```
 
 ## Non-Docker Alternatives
