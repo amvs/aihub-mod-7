@@ -27,6 +27,9 @@ def doublecheck_env(file_path: str):
         else:
             print(f"{key}=<not set>")
 
+    if parsed['MODEL_PROVIDER'] not in ("groq", "openai", "azure_openai"):
+        print(f"Warning: MODEL_PROVIDER is set to {parsed['MODEL_PROVIDER']}, which is not a valid option.")
+
 
 def llm_factory(config_path: str = "config.yml") -> Any:
     """
@@ -43,7 +46,7 @@ def llm_factory(config_path: str = "config.yml") -> Any:
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
 
-    llm_config: Dict[str, Any] = config.get("backend", {}).get("llm", {})
+    llm_config: Dict[str, Any] = config.get("llm", {})
     
     provider = llm_config.get("vendor", "groq").lower()
     model = llm_config.get("model", "llama-3.3-70b-versatile")
@@ -61,6 +64,7 @@ def llm_factory(config_path: str = "config.yml") -> Any:
     elif provider == "openai":
         from langchain_openai import ChatOpenAI
         # ChatOpenAI automatically fetches OPENAI_API_KEY from environment
+        llm_config = llm_config | config.get('openai', {})  # Merge any OpenAI-specific settings
         base_url = llm_config.get("openai_base_url")
         llm = ChatOpenAI(
             model=model,
@@ -71,6 +75,7 @@ def llm_factory(config_path: str = "config.yml") -> Any:
     elif provider == "azure_openai":
         from langchain_openai import AzureChatOpenAI
         # AzureChatOpenAI automatically fetches AZURE_OPENAI_API_KEY from environment
+        llm_config = llm_config | config.get('azure', {})  # Merge any Azure-specific settings
         llm = AzureChatOpenAI(
             model=model,
             temperature=temperature,
