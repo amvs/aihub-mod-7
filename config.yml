@@ -8,13 +8,13 @@ llm:
 
 openai:
 # OpenAI-specific configuration parameters (non-secret)
-  openai_base_url: "https://your-openai-base-url.com"
+  openai_base_url: "https://api.gpt.medtronic.com/providers/openai/v1"
 
 # Azure OpenAI-specific configuration parameters (non-secret)
 azure:
-  deployment_name: "your_deployment_name_here"
-  api_version: "2023-06-01-preview"
-  azure_endpoint: "https://your-resource-name.openai.azure.com/"
+  deployment_name: "gpt-5-mini"
+  api_version: "2024-08-01-preview"
+  azure_endpoint: "https://aiailzpoceusg5cy.services.ai.azure.com"
 
 
 email_agent:
