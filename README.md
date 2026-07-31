@@ -50,6 +50,9 @@ Branch / Section | Focus | Key Topics
 
 ## Getting Started
 
+Before running any code, you will need to switch from the `main` git branch to one of the `section-...` git branches.
+Recommend switching to `section-1-basic` for the rest of the setup instructions.
+
 ### Prerequisites
 
 - Ensure you're using Python 3.11 - 3.13.
@@ -62,11 +65,18 @@ Branch / Section | Focus | Key Topics
 
 ### Step 1: Clone the Repository
 
-Download this repository and navigate into the project directory:
+Download this repository and navigate into the project directory.
+If you already have SSH keys set up and connected to a Github account, run:
 ```bash
 # Clone the repo, cd to 'python' directory
 git clone git@github.com:amvs/aihub-mod-7.git
-cd aihub-mod-7.git
+cd aihub-mod-7
+```
+
+If you do not have SSH keys set up, you can run the following instead:
+```bash
+git clone https://github.com/amvs/aihub-mod-7.git
+cd aihub-mod-7
 ```
 
 ### Step 2: Environment Configuration
@@ -114,17 +124,21 @@ uv sync
 uv add -r requirements.txt
 ```
 
+If you have errors with `uv sync`, we recommend trying `uv sync --link-mode=copy` instead, or switching to `pip`.
+
 ### Step 4: Check LLM Configuration
 
 In order to check that your environment and LLM is configured correctly, you can import the `llm_factory` function from `env_utils.py` and run it.
 If it fails, please check your API key and endpoints.
 
 ```python
+# run in python; start python session by running "python" in your terminal
 from env_utils import llm_factory
 from dotenv import load_dotenv
 load_dotenv()
 llm = llm_factory()
 # if llm creation fails, an error message will be printed
+# end python session/return to terminal by running "quit()"
 ```
 
 ## Non-Docker Alternatives
