@@ -106,7 +106,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
     Intercepts the raw MCP fetch tool and wraps it with safety checks
     to prevent SSRF attacks and enforce domain whitelisting.
     """
-    def guarded_fetch(url: str, **kwargs):
+    async def guarded_fetch(url: str, **kwargs):
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
@@ -144,7 +144,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
                 )
 
             # ✅ Passed all checks! Execute the real, underlying MCP Fetch tool
-            raw_result = raw_mcp_fetch_tool.invoke({"url": url, **kwargs})
+            raw_result = await raw_mcp_fetch_tool.ainvoke({"url": url, **kwargs})
             return sanitize_untrusted_content(raw_result, source_label="web_content")
 
         except Exception as e:
@@ -153,7 +153,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
     # Re-package the guardrailed function as a LangChain-compatible tool
     # keeping the original description and schema intact so the LLM still understands it
     return StructuredTool.from_function(
-        func=guarded_fetch,
+        coroutine=guarded_fetch,
         name=raw_mcp_fetch_tool.name,
         description=raw_mcp_fetch_tool.description,
         args_schema=raw_mcp_fetch_tool.args_schema
@@ -205,15 +205,15 @@ def apply_wikipedia_guardrails(raw_wiki_article_tool):
     """
     Wraps Wikipedia retrieval tools to ensure text is sanitized.
     """
-    def guarded_wiki_get(title: str, **kwargs):
+    async def guarded_wiki_get(title: str, **kwargs):
         # Execute the raw tool to get the Wikipedia page text
-        raw_article_text = raw_wiki_article_tool.invoke({"title": title, **kwargs})
-        
+        raw_article_text = await raw_wiki_article_tool.ainvoke({"title": title, **kwargs})
+
         # Sanitize the Wikipedia markdown text immediately!
         return sanitize_untrusted_content(raw_article_text, source_label="wikipedia_context")
 
     return StructuredTool.from_function(
-        func=guarded_wiki_get,
+        coroutine=guarded_wiki_get,
         name=raw_wiki_article_tool.name,
         description=raw_wiki_article_tool.description,
         args_schema=raw_wiki_article_tool.args_schema
