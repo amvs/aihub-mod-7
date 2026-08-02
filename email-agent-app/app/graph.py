@@ -10,7 +10,6 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage
 from dotenv import load_dotenv
 from env_utils import llm_factory, doublecheck_env
-import yaml
 import datetime
 import logging
 import sqlite3
