@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local-only instructor materials (not for the public repo)
+CLAUDE.md
+TUTORIAL_CHECKLIST.md
