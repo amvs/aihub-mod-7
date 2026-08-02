@@ -7,8 +7,6 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
 from env_utils import llm_factory, doublecheck_env
-import yaml
-import datetime
 import logging
 
 load_dotenv()
@@ -190,12 +188,6 @@ def send_reply(state: EmailAgentState) -> EmailAgentState:
     # Integrate with a email service
     print(f"Sending reply: {state['draft_response'][:60]}...")
     return {}
-
-def route_after_review(state: EmailAgentState):
-    """Determines where to go after the human makes a decision."""
-    if state["draft_response"] == "ESCALATED_TO_HUMAN":
-        return "escalate"
-    return "send"
 
 # --- Optional: A node to handle rejections ---
 def escalate_ticket(state: EmailAgentState):
