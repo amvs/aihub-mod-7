@@ -87,7 +87,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
     Intercepts the raw MCP fetch tool and wraps it with safety checks
     to prevent SSRF attacks and enforce domain whitelisting.
     """
-    def guarded_fetch(url: str, **kwargs):
+    async def guarded_fetch(url: str, **kwargs):
         try:
             parsed = urlparse(url)
             hostname = parsed.hostname
@@ -125,7 +125,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
                 )
 
             # ✅ Passed all checks! Execute the real, underlying MCP Fetch tool
-            return raw_mcp_fetch_tool.invoke({"url": url, **kwargs})
+            return await raw_mcp_fetch_tool.ainvoke({"url": url, **kwargs})
             
         except Exception as e:
             return f"Error executing fetch: {str(e)}"
@@ -133,7 +133,7 @@ def apply_fetch_guardrails(raw_mcp_fetch_tool):
     # Re-package the guardrailed function as a LangChain-compatible tool
     # keeping the original description and schema intact so the LLM still understands it
     return StructuredTool.from_function(
-        func=guarded_fetch,
+        coroutine=guarded_fetch,
         name=raw_mcp_fetch_tool.name,
         description=raw_mcp_fetch_tool.description,
         args_schema=raw_mcp_fetch_tool.args_schema
