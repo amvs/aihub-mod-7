@@ -412,9 +412,10 @@ def build_graph(checkpointer: SqliteSaver = None, store: SqliteStore = None) -> 
     
     # Remember that Command(goto) handles the routing out of write_response AND human_review, so we don't need to add edges for those nodes here. The graph will follow the goto values returned by those nodes.
     
-    # Ensure the final nodes connect to END
-    builder.add_edge("escalate_ticket", END)
-    builder.add_edge("send_reply", END)
+    # Route final actions through the profile-saving node before terminating
+    builder.add_edge("escalate_ticket", "update_customer_history")
+    builder.add_edge("send_reply", "update_customer_history")
+    builder.add_edge("update_customer_history", END)
 
     app = builder.compile(checkpointer = checkpointer, store=store)
 
