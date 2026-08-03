@@ -56,7 +56,12 @@ with st.sidebar:
                         if "details" in log:
                             with st.expander("View Details"):
                                 st.markdown(f"**Reason:** {log['details']}")
-                            
+
+                        # Let the reviewer expand to see the original email text
+                        if log.get("email_content"):
+                            with st.expander("View Original Email"):
+                                st.text(log["email_content"])
+
                         st.caption(f"Time: {log['timestamp']} | Thread ID: {log['thread_id'][:8]}...")
         else:
             st.warning("Could not fetch logs from backend.")

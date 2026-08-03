@@ -48,21 +48,23 @@ def start_agent(email: dict):
         # Check if the security node flagged this as high risk
         if "high security risk" in security_info.content.lower():
             COMPLETED_LOGS.append({
-                "thread_id": thread_id, 
-                "action": "Security Escalation (Blocked)", 
+                "thread_id": thread_id,
+                "action": "Security Escalation (Blocked)",
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "color": "orange",
-                "details": security_info.content
+                "details": security_info.content,
+                "email_content": email["email_content"]
             })
             return {"status": "SECURITY_ESCALATED", "thread_id": thread_id}
-            
+
         # Case 3: It was genuinely safe and cleared automatically
         else:
             COMPLETED_LOGS.append({
-                "thread_id": thread_id, 
-                "action": "Auto-Processed (No Review Needed)", 
+                "thread_id": thread_id,
+                "action": "Auto-Processed (No Review Needed)",
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "color": "blue"
+                "color": "blue",
+                "email_content": email["email_content"]
             })
             return {"status": "COMPLETED", "thread_id": thread_id}
 
@@ -85,26 +87,31 @@ def approve_agent(req: ApprovalRequest): # <-- Accept the Pydantic model
     
     from langgraph.types import Command
     graph_app.invoke(Command(resume=decision), config)
-    
+
+    # Grab the original email text before we drop it from the pending tracker
+    email_content = PENDING_REVIEWS_DB.get(req.thread_id, {}).get("original_email")
+
     # Clean up the pending tracker
     if req.thread_id in PENDING_REVIEWS_DB:
         del PENDING_REVIEWS_DB[req.thread_id]
-        
+
     # --- Add to our completed logs ---
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     if req.approved:
         COMPLETED_LOGS.append({
-            "thread_id": req.thread_id, 
-            "action": "Approved & Sent", 
+            "thread_id": req.thread_id,
+            "action": "Approved & Sent",
             "timestamp": timestamp,
-            "color": "green"
+            "color": "green",
+            "email_content": email_content
         })
     else:
         COMPLETED_LOGS.append({
-            "thread_id": req.thread_id, 
-            "action": "Rejected & Escalated", 
+            "thread_id": req.thread_id,
+            "action": "Rejected & Escalated",
             "timestamp": timestamp,
-            "color": "red"
+            "color": "red",
+            "email_content": email_content
         })
         
     return {"status": "COMPLETED"}
