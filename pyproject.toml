@@ -13,4 +13,5 @@ dependencies = [
     "langchain-openai>=1.0.0",
     "langgraph>=1.0.0",
     "langgraph-cli[inmem]>=0.4.0",
+    "pygraphviz>=2.0.1",
 ]
