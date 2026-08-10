@@ -10,6 +10,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, RemoveMessage
 from dotenv import load_dotenv
 from env_utils import llm_factory, doublecheck_env
+from pydantic import BaseModel, Field
 import datetime
 import logging
 import sqlite3
@@ -19,16 +20,26 @@ BASIC_LLM = llm_factory()  # Create LLM instance based on config and environment
 
 logger = logging.getLogger("uvicorn.error")
 
-class EmailClassification(TypedDict):
-    intent: Literal["question", "bug", "billing", "feature", "complex", "cyberattack"]
-    urgency: Literal["low", "medium", "high", "critical"]
-    topic: str
-    summary: str
+class EmailClassification(BaseModel):
+    """Structured classification of an incoming support email."""
 
-class EmailSecurityAnalysis(TypedDict):
-    risk_level: Literal["low", "medium", "high"]
-    concerns: str
-    recommended_action: str
+    intent: Literal["question", "bug", "billing", "feature", "complex", "cyberattack"] = Field(
+        description="The primary intent of the email"
+    )
+    urgency: Literal["low", "medium", "high", "critical"] = Field(
+        description="How quickly this needs a response"
+    )
+    topic: str = Field(description="Short topic label, a few words")
+    summary: str = Field(description="Max one-paragraph summary of the request")
+
+class EmailSecurityAnalysis(BaseModel):
+    """Structured security risk analysis of an incoming email."""
+
+    risk_level: Literal["low", "medium", "high"] = Field(
+        description="Overall security risk level of the email"
+    )
+    concerns: str = Field(description="Specific security concerns identified, if any")
+    recommended_action: str = Field(description="Recommended next action")
 
 class CustomerHistory(TypedDict):
     customer_email: str
@@ -99,12 +110,13 @@ def classify_intent(state: EmailAgentState) -> Command[Literal["search_documenta
     # Get structured response directly as a dict
     classification = structured_llm.invoke(classification_prompt)
 
-    if classification['intent'] == 'cyberattack':
-        return Command(update={"classification": classification}, goto="escalate_ticket")
-    
+    if classification.intent == 'cyberattack':
+        return Command(update={"classification": classification.model_dump()}, goto="escalate_ticket")
+
 
     # Store classification as a single dict in state
-    return Command(update={"classification": classification}, goto=["search_documentation", "bug_tracking"])
+    # call model_dump to store it as dict instead of pydantic model
+    return Command(update={"classification": classification.model_dump()}, goto=["search_documentation", "bug_tracking"])
 
 def search_documentation(state: EmailAgentState) -> EmailAgentState:
     """Search knowledge base for relevant information"""
@@ -270,8 +282,9 @@ def security_check(state: EmailAgentState) -> Command[Literal["classify_intent",
     logger.info(f"Security analysis completed: {security_analysis}")
 
     # Simple logic to determine if escalation is needed
-    if security_analysis['risk_level'] == 'high':
-        return Command(update={"security_analysis": security_analysis}, goto="escalate_ticket")
+    # call model_dump to store it as dict instead of pydantic model
+    if security_analysis.risk_level == 'high':
+        return Command(update={"security_analysis": security_analysis.model_dump()}, goto="escalate_ticket")
 
     # if message is safe, save it to list of messages in state and continue to classify intent
     store_message = f"""
@@ -284,7 +297,7 @@ def security_check(state: EmailAgentState) -> Command[Literal["classify_intent",
     safe_message = HumanMessage(content=store_message, metadata={"type": "Customer_Email"})
 
     
-    return Command(update={"security_analysis": security_analysis,
+    return Command(update={"security_analysis": security_analysis.model_dump(),
                            "messages": [safe_message]}, goto="summarize_conversation")
 
 def summarize_conversation(state: EmailAgentState) -> EmailAgentState:
