@@ -7,6 +7,7 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.checkpoint.memory import InMemorySaver
 from dotenv import load_dotenv
 from env_utils import llm_factory, doublecheck_env
+from pydantic import BaseModel, Field
 import logging
 
 load_dotenv()
@@ -15,11 +16,17 @@ BASIC_LLM = llm_factory()  # Create LLM instance based on config and environment
 
 logger = logging.getLogger("uvicorn.error")
 
-class EmailClassification(TypedDict):
-    intent: Literal["question", "bug", "billing", "feature", "complex"]
-    urgency: Literal["low", "medium", "high", "critical"]
-    topic: str
-    summary: str
+class EmailClassification(BaseModel):
+    """Structured classification of an incoming support email."""
+
+    intent: Literal["question", "bug", "billing", "feature", "complex"] = Field(
+        description="The primary intent of the email"
+    )
+    urgency: Literal["low", "medium", "high", "critical"] = Field(
+        description="How quickly this needs a response"
+    )
+    topic: str = Field(description="Short topic label, a few words")
+    summary: str = Field(description="Max one-paragraph summary of the request")
 
 class EmailAgentState(TypedDict):
     # Raw email data
@@ -70,7 +77,8 @@ def classify_intent(state: EmailAgentState) -> EmailAgentState:
     classification = structured_llm.invoke(classification_prompt)
 
     # Store classification as a single dict in state
-    return {"classification": classification}
+    # call model_dump to store it as dict instead of pydantic model
+    return {"classification": classification.model_dump()}
 
 def search_documentation(state: EmailAgentState) -> EmailAgentState:
     """Search knowledge base for relevant information"""
