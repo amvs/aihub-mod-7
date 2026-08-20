@@ -141,7 +141,25 @@ llm = llm_factory()
 # end python session/return to terminal by running "quit()"
 ```
 
-## Non-Docker Alternatives
+
+## Docker and Alternatives
+
+After switching to a branch that is not associated with section 1 (for example,  `section-2-scripted` or any of the later sections/solution branches), you will need to run the agent in Docker.
+
+The steps are:
+1) Make sure Docker is running on your computer. The easiest way to do this is open the desktop app.
+2) Navigate to the `email-agent-app` folder in the repo (does not appear on `main` branch or `section-1-basic` branch).
+3) Run `docker compose up --build -d`.
+4) Navigate to `http://localhost:8501/` in a web browser. You should see the frontend of the agent. 
+5) Once you are done with your agent, run `docker compose down` to shut down the Docker container. If you want to restart the agent shut down the agent and then rerun the command from step 3.
+
+In order to monitor your program, you will want to look at the logs in Docker. There are two main ways you can do this:
+* Docker's desktop app. Once you have started your agent by running `docker compose up --build`, two containers should appear (one for the front end and one for the backend). Click on the one for the backend and you should see log info being printed to a terminal.
+* You can also view logs directly in the terminal that you started Docker from. If you would prefer this, remove `-d` from the command to start the container (i.e. run `docker compose up --build` instead of the command from step 2). `-d` tells Docker to detach from the process after it finishes building the container; removing this flag will cause Docker to keep using the terminal to print logs to until you stop the container.
+
+There is a lot more information about using Docker online (including stopping/starting containers without rebuilding them every time). If you are interested, I recommend starting with Docker's documentation. A useful cheat sheet is here: https://www.docker.com/resources/cli-cheat-sheet/ 
+
+### Non-Docker Alternatives
 
 If you don't have admin privileges on your laptop and you cannot install Docker Desktop, don't worry.
 You can still complete 100% of this course using one of these options:

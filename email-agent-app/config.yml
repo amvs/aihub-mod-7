@@ -2,11 +2,11 @@ backend:
   url: "http://api:8000"
   email_agent:
     # every second of real time is treated as 1 hour of virtual time
-    virtual_speedup_factor: 3600.0
+    virtual_speedup_factor: 1.0
 llm:
   # LLM Provider ("groq", "openai", or "azure_openai")
   vendor: "groq"
-  model: "llama-3.3-70b-versatile"
+  model: "openai/gpt-oss-20b"
   temperature: 0
 
 openai:
